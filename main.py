@@ -1,3 +1,5 @@
+PHOTOS_PATH = '/mnt/tmp'
+
 import os
 import sys
 import time
@@ -75,7 +77,7 @@ class FileChooserGalleryView(FileChooserIconView):
         kbd.bind(on_key_down=self.go_back)
     def go_back(self, *args):
         if screen_manager.current == 'chooser':
-            if self.path == '/mnt/tmp':
+            if self.path == PHOTOS_PATH:
                 sys.exit(0)
             else:
                 self.rootpath = os.path.normpath(os.path.join(self.path, os.path.pardir))
@@ -108,7 +110,7 @@ class FileChooserGalleryView(FileChooserIconView):
 class Chooser(Screen):
     def __init__(self, *args, **kwargs):
         super(Chooser, self).__init__(*args, **kwargs)
-        self.add_widget(FileChooserGalleryView(rootpath='/mnt/tmp'))
+        self.add_widget(FileChooserGalleryView(rootpath=PHOTOS_PATH))
 
 class blank_canvas(Widget):
     pass
