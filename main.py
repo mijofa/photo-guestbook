@@ -78,12 +78,14 @@ class FileChooserGalleryView(FileChooserIconView):
     def go_back(self, *args):
         if screen_manager.current == 'chooser':
             if self.path == PHOTOS_PATH:
-                sys.exit(0)
+                return False # Let other parts of Kivy handle the keypress, if the key was Esc Kivy will quit here.
             else:
+                # This should theoretically never trigger since I'm only working in one directory, but I'll leave it here anyway.
                 self.rootpath = os.path.normpath(os.path.join(self.path, os.path.pardir))
                 self.path = self.rootpath
         else:
             screen_manager.current = 'chooser'
+        return True
     def open_entry(self, entry):
         screen_manager.current = 'viewer'
         screen_manager.current_screen.set_image(entry.path)
