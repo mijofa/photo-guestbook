@@ -6,10 +6,9 @@ import time
 
 import kivy
 from kivy.metrics import dp
-from kivy.properties import NumericProperty
 from kivy.app import App
 from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
@@ -64,29 +63,17 @@ Builder.load_string("""
             size: self.size
 """)
 
-screen_manager = ScreenManager()
+screen_manager = ScreenManager(transition=SlideTransition())
 
 class FileChooserGalleryView(FileChooserIconView):
-    thumbsize = NumericProperty(dp(256))
+    thumbsize = dp(256)
     _ENTRY_TEMPLATE = 'FileGalleryEntry'
     def __init__(self, *args, **kwargs):
         super(FileChooserGalleryView, self).__init__(*args, **kwargs)
         self.bind(on_submit=self.submit)
 
-        kbd = Window.request_keyboard(None, self)
-        kbd.bind(on_key_down=self.go_back)
-    def go_back(self, *args):
-        if screen_manager.current == 'chooser':
-            if self.path == PHOTOS_PATH:
-                return False # Let other parts of Kivy handle the keypress, if the key was Esc Kivy will quit here.
-            else:
-                # This should theoretically never trigger since I'm only working in one directory, but I'll leave it here anyway.
-                self.rootpath = os.path.normpath(os.path.join(self.path, os.path.pardir))
-                self.path = self.rootpath
-        else:
-            screen_manager.current = 'chooser'
-        return True
     def open_entry(self, entry):
+        screen_manager.transition.direction = 'left'
         screen_manager.current = 'viewer'
         screen_manager.current_screen.set_image(entry.path)
 
@@ -112,7 +99,8 @@ class FileChooserGalleryView(FileChooserIconView):
 class Chooser(Screen):
     def __init__(self, *args, **kwargs):
         super(Chooser, self).__init__(*args, **kwargs)
-        self.add_widget(FileChooserGalleryView(rootpath=PHOTOS_PATH))
+        self.filelist = FileChooserGalleryView(rootpath=PHOTOS_PATH)
+        self.add_widget(self.filelist)
 
 class blank_canvas(Widget):
     pass
@@ -123,6 +111,7 @@ class Viewer(Screen):
         self.image1.source = os.path.join(path, '1.jpg')
         self.image2.source = os.path.join(path, '2.jpg')
     def touched(self, screen, event):
+        screen_manager.transition.direction = 'right'
         screen_manager.current = 'chooser'
     def __init__(self, *args, **kwargs):
         super(Viewer, self).__init__(*args, **kwargs)
@@ -137,10 +126,30 @@ class Viewer(Screen):
         self.add_widget(self.image3)
 
 class Main(App):
+    def key_down(self, *args):
+        ## I should set this up to handle keys properly rather than just trigger on any keypress
+        # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
+        if screen_manager.current == 'viewer':
+            screen_manager.transition.direction = 'right'
+            screen_manager.current = 'chooser'
+            return True
+        elif screen_manager.current == 'chooser':
+            if os.path.samefile(self.chooser.filelist.path, PHOTOS_PATH):
+                return False # Let other parts of Kivy handle the keypress, if the key was Esc Kivy will quit here.
+            self.chooser.filelist.rootpath = os.path.normpath(os.path.join(self.chooser.filelist.path, os.path.pardir))
+            self.chooser.filelist.path = self.chooser.filelist.rootpath
+            return True
+        return False
     def build(self):
-        screen_manager.add_widget(Chooser(name='chooser'))
-        screen_manager.add_widget(Viewer(name='viewer'))
-        screen_manager.current = 'chooser'
+        self.chooser = Chooser(name='chooser')
+        screen_manager.add_widget(self.chooser)
+        self.viewer = Viewer(name='viewer')
+        screen_manager.add_widget(self.viewer)
+
+        # The 'Back' key on Android is treated the same as the 'Esc' key, so I need use the keyboard to query that.
+        kbd = Window.request_keyboard(None, self)
+        kbd.bind(on_key_down=self.key_down)
+
         return screen_manager
 
 Main().run()
