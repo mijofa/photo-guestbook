@@ -1,0 +1,3 @@
+title=Photo Guestbook
+author=Mike Fabre <mike@fabre.id.au>
+orientation=landscape
