@@ -5,6 +5,8 @@ import sys
 import time
 
 import kivy
+if kivy.platform == 'android':
+    PHOTOS_PATH = '/sdcard/DCIM'
 from kivy.metrics import dp
 from kivy.app import App
 from kivy.lang import Builder
