@@ -8,10 +8,13 @@ import kivy
 from kivy.metrics import dp
 from kivy.app import App
 from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
+from kivy.uix.button import Button
 from kivy.core.window import Window
 
 Builder.load_string("""
@@ -63,19 +66,19 @@ Builder.load_string("""
             size: self.size
 """)
 
-screen_manager = ScreenManager(transition=SlideTransition())
 
 class FileChooserGalleryView(FileChooserIconView):
     thumbsize = dp(256)
     _ENTRY_TEMPLATE = 'FileGalleryEntry'
     def __init__(self, *args, **kwargs):
         super(FileChooserGalleryView, self).__init__(*args, **kwargs)
-        self.bind(on_submit=self.submit)
+        self.register_event_type('on_select_folder')
 
     def open_entry(self, entry):
-        screen_manager.transition.direction = 'left'
-        screen_manager.current = 'viewer'
-        screen_manager.current_screen.set_image(entry.path)
+        self.current_entry = entry
+        self.dispatch('on_select_folder')
+    def on_select_folder(self):
+        pass
 
     def get_image(self, ctx):
         if ctx.path == '../':
@@ -92,64 +95,76 @@ class FileChooserGalleryView(FileChooserIconView):
             return 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
     def get_time(self, ctx):
         return time.ctime(os.path.getmtime(ctx.path))
-    def submit(self, entry, selection, touch):
-        screen_manager.current = 'viewer'
-        screen_manager.current_screen.set_image(selection[0])
-
-class Chooser(Screen):
-    def __init__(self, *args, **kwargs):
-        super(Chooser, self).__init__(*args, **kwargs)
-        self.filelist = FileChooserGalleryView(rootpath=PHOTOS_PATH)
-        self.add_widget(self.filelist)
 
 class blank_canvas(Widget):
     pass
 
-class Viewer(Screen):
+class Viewer(GridLayout):
     def set_image(self, path):
         self.image0.source = os.path.join(path, '0.jpg')
         self.image1.source = os.path.join(path, '1.jpg')
         self.image2.source = os.path.join(path, '2.jpg')
-    def touched(self, screen, event):
-        screen_manager.transition.direction = 'right'
-        screen_manager.current = 'chooser'
     def __init__(self, *args, **kwargs):
-        super(Viewer, self).__init__(*args, **kwargs)
-        self.bind(on_touch_down=self.touched)
-        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file',size_hint=[0.5,0.5],pos_hint={'top': 1, 'left': 1})
+        super(Viewer, self).__init__(rows=2, cols=2, *args, **kwargs)
+        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image0)
-        self.image1 = Image(source='atlas://data/images/defaulttheme/filechooser_file',size_hint=[0.5,0.5],pos_hint={'top': 1, 'right': 1})
+        self.image1 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image1)
-        self.image2 = Image(source='atlas://data/images/defaulttheme/filechooser_file',size_hint=[0.5,0.5],pos_hint={'bottom': 1, 'left': 1})
+        self.image2 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image2)
-        self.image3 = blank_canvas(size_hint=[0.5,0.5],pos_hint={'bottom': 1, 'right': 1})
+        self.image3 = blank_canvas()
         self.add_widget(self.image3)
 
 class Main(App):
-    def key_down(self, *args):
-        ## I should set this up to handle keys properly rather than just trigger on any keypress
-        # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
-        if screen_manager.current == 'viewer':
-            screen_manager.transition.direction = 'right'
-            screen_manager.current = 'chooser'
+    def go_back(self, *args):
+        if self.screen_manager.current == 'viewer':
+            self.screen_manager.transition.direction = 'right'
+            self.screen_manager.current = 'chooser'
             return True
-        elif screen_manager.current == 'chooser':
-            if os.path.samefile(self.chooser.filelist.path, PHOTOS_PATH):
+        elif self.screen_manager.current == 'chooser':
+            if os.path.samefile(self.chooser.path, PHOTOS_PATH):
                 return False # Let other parts of Kivy handle the keypress, if the key was Esc Kivy will quit here.
-            self.chooser.filelist.rootpath = os.path.normpath(os.path.join(self.chooser.filelist.path, os.path.pardir))
-            self.chooser.filelist.path = self.chooser.filelist.rootpath
+            self.chooser.rootpath = os.path.normpath(os.path.join(self.chooser.path, os.path.pardir))
+            self.chooser.path = self.chooser.rootpath
             return True
         return False
+    def select_folder(self, chooser):
+        self.screen_manager.transition.direction = 'left'
+        self.screen_manager.current = 'viewer'
+        self.viewer.set_image(chooser.current_entry.path)
     def build(self):
-        self.chooser = Chooser(name='chooser')
-        screen_manager.add_widget(self.chooser)
-        self.viewer = Viewer(name='viewer')
-        screen_manager.add_widget(self.viewer)
+        root = FloatLayout()
+        self.screen_manager = ScreenManager(size_hint=[0.9,1],pos_hint={'left': 1})
+        root.add_widget(self.screen_manager)
 
-        # The 'Back' key on Android is treated the same as the 'Esc' key, so I need use the keyboard to query that.
-        kbd = Window.request_keyboard(None, self)
-        kbd.bind(on_key_down=self.key_down)
+        ## Buttons.
+        ## These are meant to work like the navbar would.
+        # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
+        win = Button(text='Win', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.8})
+        win.bind(on_press=self.go_back)
+        root.add_widget(win)
 
-        return screen_manager
+        home = Button(text='Home', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.5})
+        home.bind(on_press=self.go_back)
+        root.add_widget(home)
+
+        back = Button(text='Back', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.2})
+        back.bind(on_press=self.go_back)
+        root.add_widget(back)
+
+        ## FileChooser
+        chooser_screen = Screen(name='chooser')
+        self.chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
+        self.chooser.bind(on_select_folder=self.select_folder)
+        chooser_screen.add_widget(self.chooser)
+        self.screen_manager.add_widget(chooser_screen)
+        
+        ## Image viewer
+        viewer_screen = Screen(name='viewer')
+        self.viewer = Viewer()
+        viewer_screen.add_widget(self.viewer)
+        self.screen_manager.add_widget(viewer_screen)
+
+        return root
 
 Main().run()
