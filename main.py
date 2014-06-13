@@ -173,14 +173,11 @@ class Main(App):
         if self.screen_manager.current == 'viewer':
             self.screen_manager.transition.direction = 'right'
             self.screen_manager.current = 'chooser'
-            return True
         elif self.screen_manager.current == 'chooser':
             if os.path.samefile(self.chooser.path, PHOTOS_PATH):
-                return False # Let other parts of Kivy handle the keypress, if the key was Esc Kivy will quit here.
+                return
             self.chooser.rootpath = os.path.normpath(os.path.join(self.chooser.path, os.path.pardir))
             self.chooser.path = self.chooser.rootpath
-            return True
-        return False
     def pressed_home(self, *args):
         if self.screen_manager.current == 'viewer':
             self.painter.texture.save('/tmp/blah.jpg')
@@ -240,6 +237,7 @@ class Main(App):
         viewer_screen.bind(on_leave=self.viewer.set_image)
         viewer_screen.add_widget(self.viewer)
         self.painter = PaintWidget()
+        viewer_screen.bind(on_leave=lambda args: self.painter.canvas.clear())
         viewer_screen.add_widget(self.painter)
         self.screen_manager.add_widget(viewer_screen)
 
