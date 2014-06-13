@@ -133,12 +133,15 @@ class blank_canvas(Widget):
 class PaintWidget(Widget):
     def on_touch_down(self, touch):
         with self.canvas:
-            Color(0,0,0, mode='rgb')
+            Color(1,1,1, mode='rgb')
             d = 4
             Ellipse(pos=(touch.x - d / 2, touch.y - d / 2), size=(d, d))
             touch.ud['line'] = Line(points=(touch.x, touch.y), width=d)
+            Color(0,0,0, mode='rgb')
+            touch.ud['line_inner'] = Line(points=touch.ud['line'].points, width=d-1)
     def on_touch_move(self, touch):
         touch.ud['line'].points += [touch.x, touch.y]
+        touch.ud['line_inner'].points = touch.ud['line'].points
 
 class Viewer(GridLayout):
     def set_image(self, path = None):
@@ -166,7 +169,7 @@ class Viewer(GridLayout):
         self.add_widget(self.image3)
 
 class Main(App):
-    def go_back(self, *args):
+    def pressed_back(self, *args):
         if self.screen_manager.current == 'viewer':
             self.screen_manager.transition.direction = 'right'
             self.screen_manager.current = 'chooser'
@@ -178,34 +181,46 @@ class Main(App):
             self.chooser.path = self.chooser.rootpath
             return True
         return False
-    def save(self, *args):
-        self.painter.texture.save('/tmp/blah.jpg')
+    def pressed_home(self, *args):
+        if self.screen_manager.current == 'viewer':
+            self.painter.texture.save('/tmp/blah.jpg')
+        elif self.screen_manager.current == 'chooser':
+            self.chooser._trigger_update()
+    def pressed_win(self, *args):
+        pass
     def select_folder(self, chooser):
         self.screen_manager.transition.direction = 'left'
         self.screen_manager.current = 'viewer'
         self.viewer.set_image(chooser.current_entry.path)
+    def enter_chooser(self, *args):
+        self.home_btn.text = 'Refresh'
+        self.back_btn.text = 'Back'
+    def enter_viewer(self, *args):
+        self.home_btn.text = 'Save'
+        self.back_btn.text = 'Cancel'
     def build(self):
         root = FloatLayout()
         self.screen_manager = ScreenManager(transition=SlideTransition(), size_hint=[0.925,1],pos_hint={'left': 1})
         root.add_widget(self.screen_manager)
 
         ## Buttons.
-        ## These are meant to work like the navbar would.
+        ## These are meant to work like the Android navbar would, and I have named them as such.
         # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
-        win = Button(text='Win', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.8})
-        win.bind(on_press=self.go_back)
-        root.add_widget(win)
+        self.win_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.8})
+        self.win_btn.bind(on_press=self.pressed_win)
+        root.add_widget(self.win_btn)
 
-        home = Button(text='Save', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
-        home.bind(on_press=self.save)
-        root.add_widget(home)
+        self.home_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
+        self.home_btn.bind(on_press=self.pressed_home)
+        root.add_widget(self.home_btn)
 
-        back = Button(text='Back', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.2})
-        back.bind(on_press=self.go_back)
-        root.add_widget(back)
+        self.back_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.2})
+        self.back_btn.bind(on_press=self.pressed_back)
+        root.add_widget(self.back_btn)
 
         ## FileChooser
         chooser_screen = Screen(name='chooser')
+        chooser_screen.bind(on_enter=self.enter_chooser)
         self.chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
         self.chooser.bind(on_select_folder=self.select_folder)
         chooser_screen.add_widget(self.chooser)
@@ -220,6 +235,7 @@ class Main(App):
 
         ## Image viewer
         viewer_screen = Screen(name='viewer')
+        viewer_screen.bind(on_enter=self.enter_viewer)
         self.viewer = Viewer()
         viewer_screen.bind(on_leave=self.viewer.set_image)
         viewer_screen.add_widget(self.viewer)
