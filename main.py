@@ -136,21 +136,21 @@ class Main(App):
         self.viewer.set_image(chooser.current_entry.path)
     def build(self):
         root = FloatLayout()
-        self.screen_manager = ScreenManager(size_hint=[0.9,1],pos_hint={'left': 1})
+        self.screen_manager = ScreenManager(size_hint=[0.95,1],pos_hint={'left': 1})
         root.add_widget(self.screen_manager)
 
         ## Buttons.
         ## These are meant to work like the navbar would.
         # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
-        win = Button(text='Win', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.8})
+        win = Button(text='Win', size_hint=[0.05,0.1],pos_hint={'right': 1, 'center_y': 0.8})
         win.bind(on_press=self.go_back)
         root.add_widget(win)
 
-        home = Button(text='Home', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.5})
+        home = Button(text='Home', size_hint=[0.05,0.1],pos_hint={'right': 1, 'center_y': 0.5})
         home.bind(on_press=self.go_back)
         root.add_widget(home)
 
-        back = Button(text='Back', size_hint=[0.1,0.1],pos_hint={'right': 1, 'center_y': 0.2})
+        back = Button(text='Back', size_hint=[0.05,0.1],pos_hint={'right': 1, 'center_y': 0.2})
         back.bind(on_press=self.go_back)
         root.add_widget(back)
 
