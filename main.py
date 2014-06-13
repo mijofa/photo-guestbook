@@ -161,6 +161,13 @@ class Main(App):
         chooser_screen.add_widget(self.chooser)
         self.screen_manager.add_widget(chooser_screen)
 
+        def update_rect(instance, value):
+            instance.bg.pos = instance.pos
+            instance.bg.size = instance.size
+        self.screen_manager.bind(size=update_rect,pos=update_rect)
+        with self.screen_manager.canvas.before:
+            self.screen_manager.bg = Rectangle(source='background.png')
+
         ## Image viewer
         viewer_screen = Screen(name='viewer')
         self.viewer = Viewer()
