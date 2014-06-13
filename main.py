@@ -10,7 +10,7 @@ if kivy.platform == 'android':
 from kivy.metrics import dp
 from kivy.app import App
 from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -136,7 +136,7 @@ class Main(App):
         self.viewer.set_image(chooser.current_entry.path)
     def build(self):
         root = FloatLayout()
-        self.screen_manager = ScreenManager(size_hint=[0.925,1],pos_hint={'left': 1})
+        self.screen_manager = ScreenManager(transition=SlideTransition(), size_hint=[0.925,1],pos_hint={'left': 1})
         root.add_widget(self.screen_manager)
 
         ## Buttons.
