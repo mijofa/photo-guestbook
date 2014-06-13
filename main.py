@@ -70,7 +70,7 @@ Builder.load_string("""
 
 
 class FileChooserGalleryView(FileChooserIconView):
-    thumbsize = dp(256)
+    thumbsize = dp(128)
     _ENTRY_TEMPLATE = 'FileGalleryEntry'
     def __init__(self, *args, **kwargs):
         super(FileChooserGalleryView, self).__init__(*args, **kwargs)
@@ -160,7 +160,7 @@ class Main(App):
         self.chooser.bind(on_select_folder=self.select_folder)
         chooser_screen.add_widget(self.chooser)
         self.screen_manager.add_widget(chooser_screen)
-        
+
         ## Image viewer
         viewer_screen = Screen(name='viewer')
         self.viewer = Viewer()
