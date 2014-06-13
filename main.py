@@ -18,6 +18,7 @@ from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.core.window import Window
+from kivy.graphics import Rectangle, Color, Ellipse, Line
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -66,6 +67,27 @@ Builder.load_string("""
         Rectangle:
             pos: self.pos
             size: self.size
+<red_canvas>
+    canvas.before:
+        Color:
+            rgba: 1,0,0,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<green_canvas>
+    canvas.before:
+        Color:
+            rgba: 0,1,0,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<blue_canvas>
+    canvas.before:
+        Color:
+            rgba: 0,0,1,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 """)
 
 
@@ -98,21 +120,47 @@ class FileChooserGalleryView(FileChooserIconView):
     def get_time(self, ctx):
         return time.ctime(os.path.getmtime(ctx.path))
 
+class red_canvas(Widget):
+    pass
+class green_canvas(Widget):
+    pass
+class blue_canvas(Widget):
+    pass
 class blank_canvas(Widget):
     pass
 
+
+class PaintWidget(Widget):
+    def on_touch_down(self, touch):
+        with self.canvas:
+            Color(0,0,0, mode='rgb')
+            d = 4
+            Ellipse(pos=(touch.x - d / 2, touch.y - d / 2), size=(d, d))
+            touch.ud['line'] = Line(points=(touch.x, touch.y), width=d)
+    def on_touch_move(self, touch):
+        touch.ud['line'].points += [touch.x, touch.y]
+
 class Viewer(GridLayout):
-    def set_image(self, path):
-        self.image0.source = os.path.join(path, '0.jpg')
-        self.image1.source = os.path.join(path, '1.jpg')
-        self.image2.source = os.path.join(path, '2.jpg')
+    def set_image(self, path = None):
+        if type(path) != str and type(path) != unicode:
+            source = 'atlas://data/images/defaulttheme/filechooser_file'
+            self.image0.source = source
+            self.image1.source = source
+            self.image2.source = source
+            return
+ #       self.image0.source = os.path.join(path, '0.jpg')
+  #      self.image1.source = os.path.join(path, '1.jpg')
+   #     self.image2.source = os.path.join(path, '2.jpg')
     def __init__(self, *args, **kwargs):
-        super(Viewer, self).__init__(rows=2, cols=2, *args, **kwargs)
-        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
+        super(Viewer, self).__init__(rows=2, cols=2, padding=8, spacing=16, *args, **kwargs)
+        self.image0 = red_canvas()
+#        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image0)
-        self.image1 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
+        self.image1 = green_canvas()
+#        self.image1 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image1)
-        self.image2 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
+        self.image2 = blue_canvas()
+#        self.image2 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image2)
         self.image3 = blank_canvas()
         self.add_widget(self.image3)
@@ -130,6 +178,8 @@ class Main(App):
             self.chooser.path = self.chooser.rootpath
             return True
         return False
+    def save(self, *args):
+        self.painter.texture.save('/tmp/blah.jpg')
     def select_folder(self, chooser):
         self.screen_manager.transition.direction = 'left'
         self.screen_manager.current = 'viewer'
@@ -146,8 +196,8 @@ class Main(App):
         win.bind(on_press=self.go_back)
         root.add_widget(win)
 
-        home = Button(text='Home', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
-        home.bind(on_press=self.go_back)
+        home = Button(text='Save', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
+        home.bind(on_press=self.save)
         root.add_widget(home)
 
         back = Button(text='Back', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.2})
@@ -171,7 +221,10 @@ class Main(App):
         ## Image viewer
         viewer_screen = Screen(name='viewer')
         self.viewer = Viewer()
+        viewer_screen.bind(on_leave=self.viewer.set_image)
         viewer_screen.add_widget(self.viewer)
+        self.painter = PaintWidget()
+        viewer_screen.add_widget(self.painter)
         self.screen_manager.add_widget(viewer_screen)
 
         return root
