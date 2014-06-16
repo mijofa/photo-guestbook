@@ -80,15 +80,22 @@ class blank_canvas(Widget):
         super(blank_canvas, self).__init__(*args)
         self.bind(size=self.draw_lines, pos=self.draw_lines)
     def draw_lines(self, *args):
-        line_dist = 80
+        line_dist = 40
         line_offset = 0
         num_lines = (self.height/line_dist)
         self.canvas.clear()
         with self.canvas:
-            Color(0,0,0,1)
-            for i in xrange(1,int(num_lines)):
+            for i in xrange(1,int(num_lines/2)):
                 line_offset += line_dist
+                Color(0,0,0,1)
                 Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
+                line_offset += line_dist
+                Color(0.5,0.5,1,0.5)
+                Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
+            line_offset += line_dist
+            Color(0,0,0,1)
+            Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
+
             Color(1,0,0,0.25)
             Line(width=1.5, points=[self.pos[0]+(line_dist*1.5), self.pos[1]+self.height, self.pos[0]+(line_dist*1.5), self.pos[1]])
 
