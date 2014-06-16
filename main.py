@@ -201,7 +201,7 @@ class PhotoStrip(ScrollView):
 
 class Main(App):
     def pressed_back(self, *args):
-        if self.screen_manager.current == 'viewer':
+        if self.screen_manager.current == 'photostrip':
             self.screen_manager.transition.direction = 'right'
             self.screen_manager.current = 'chooser'
         elif self.screen_manager.current == 'chooser':
@@ -211,24 +211,25 @@ class Main(App):
             self.chooser.path = self.chooser.rootpath
         return True
     def pressed_home(self, *args):
-        if self.screen_manager.current == 'viewer':
+        if self.screen_manager.current == 'photostrip':
             pass
 #            self.painter.save_png('/sdcard/DCIM/tmp/blah.png')
         elif self.screen_manager.current == 'chooser':
+            self.chooser._show_progress()
             self.chooser._trigger_update()
         return True
     def pressed_win(self, *args):
         pass
     def select_folder(self, chooser):
         self.screen_manager.transition.direction = 'left'
-        self.screen_manager.current = 'viewer'
-        self.viewer.set_path(chooser.current_entry.path)
+        self.screen_manager.current = 'photostrip'
+        self.photostrip.set_path(chooser.current_entry.path)
     def enter_chooser(self, *args):
         self.home_btn.text = 'Refresh'
-        self.back_btn.text = 'Back'
-    def enter_viewer(self, *args):
-        self.home_btn.text = 'Save'
-        self.back_btn.text = 'Cancel'
+        self.back_btn.text = '<-'
+    def enter_strip(self, *args):
+        self.home_btn.text = ''
+        self.back_btn.text = '<-'
     def build(self):
         root = FloatLayout()
         self.screen_manager = ScreenManager(transition=SlideTransition(), size_hint=[0.925,1],pos_hint={'left': 1})
@@ -256,7 +257,6 @@ class Main(App):
         self.chooser.bind(on_select_folder=self.select_folder)
         chooser_screen.add_widget(self.chooser)
         self.screen_manager.add_widget(chooser_screen)
-
         def update_rect(instance, value):
             instance.bg.pos = instance.pos
             instance.bg.size = instance.size
@@ -264,16 +264,16 @@ class Main(App):
         with self.screen_manager.canvas.before:
             self.screen_manager.bg = Rectangle(source='background.png')
 
-        ## Image viewer
-        viewer_screen = Screen(name='viewer')
-        viewer_screen.bind(on_enter=self.enter_viewer)
-        self.viewer = PhotoStrip()
-        viewer_screen.bind(on_leave=self.viewer.clear_path)
-        viewer_screen.add_widget(self.viewer)
+        ## Photo strip
+        photostrip_screen = Screen(name='photostrip')
+        photostrip_screen.bind(on_enter=self.enter_strip)
+        self.photostrip = PhotoStrip()
+        photostrip_screen.bind(on_leave=self.photostrip.clear_path)
+        photostrip_screen.add_widget(self.photostrip)
 #        self.painter = PaintWidget()
 #        viewer_screen.bind(on_leave=lambda args: self.painter.canvas.clear())
 #        viewer_screen.add_widget(self.painter)
-        self.screen_manager.add_widget(viewer_screen)
+        self.screen_manager.add_widget(photostrip_screen)
 
         return root
 
