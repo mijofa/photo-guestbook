@@ -181,7 +181,7 @@ class PhotoStrip(ScrollView):
         self.image2.set_image(source)
     def __init__(self, *args, **kwargs):
         super(PhotoStrip, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
-        self.strip = Image(source='photos-strip.png', allow_stretch=True, size_hint_y=2)
+        self.strip = Image(source='photos-strip.png', allow_stretch=True, size_hint_y=1.8)
         self.add_widget(self.strip)
 
         self.image0 = image_button()
