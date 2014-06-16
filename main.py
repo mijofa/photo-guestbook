@@ -61,34 +61,10 @@ Builder.load_string("""
         pos: root.pos
         pos: root.center_x - self.width /2, root.y
         halign: 'center'
-<blank_canvas>
-    canvas.before:
-        Color:
-            rgba: 1,1,1,1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-<red_canvas>
-    canvas.before:
-        Color:
-            rgba: 1,0,0,1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-<green_canvas>
-    canvas.before:
-        Color:
-            rgba: 0,1,0,1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-<blue_canvas>
-    canvas.before:
-        Color:
-            rgba: 0,0,1,1
-        Rectangle:
-            pos: self.pos
-            size: self.size
+
+<image_button>
+    canvas:
+        Clear
 """)
 
 
@@ -120,15 +96,6 @@ class FileChooserGalleryView(FileChooserIconView):
             return 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
     def get_time(self, ctx):
         return time.ctime(os.path.getmtime(ctx.path))
-
-class red_canvas(Widget):
-    pass
-class green_canvas(Widget):
-    pass
-class blue_canvas(Widget):
-    pass
-class blank_canvas(Widget):
-    pass
 
 
 class PaintWidget(Widget):
@@ -175,41 +142,62 @@ class PaintWidget(Widget):
         if touch.ud.has_key('line_inner'):
             touch.ud['line_inner'].points = touch.ud['line_outer'].points
 
-class Viewer(ScrollView):
+class image_button(Button):
+    def __init__(self, source = '', *args, **kwargs):
+        super(image_button, self).__init__(*args, **kwargs)
+        self.img = Image(source=source, allow_stretch=True)
+        self.add_widget(self.img)
+        self.bind(size=self.update_img, pos=self.update_img)
+    def update_img(self, instance, value):
+        instance.img.size = instance.size
+        instance.img.pos = instance.pos
+    def set_image(self, filename):
+        self.img.source = filename
+
+class PhotoStrip(ScrollView):
     def set_path(self, path):
         self.path = path
-        self.image0.source = os.path.join(path, '0.jpg')
-        self.image1.source = os.path.join(path, '1.jpg')
-        self.image2.source = os.path.join(path, '2.jpg')
+        self.image0.set_image(os.path.join(path, '0.jpg'))
+        self.image1.set_image(os.path.join(path, '1.jpg'))
+        self.image2.set_image(os.path.join(path, '2.jpg'))
     def clear_path(self, *args):
         self.path = None
-        source = 'atlas://data/images/defaulttheme/filechooser_file'
-        self.image0.source = source
-        self.image1.source = source
-        self.image2.source = source
+        source = ''
+        self.image0.set_image(source)
+        self.image1.set_image(source)
+        self.image2.set_image(source)
     def __init__(self, *args, **kwargs):
-        super(Viewer, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
-        self.layout = FloatLayout(size_hint_y=2)
-        def update_rect(instance, value):
-            instance.bg.pos = instance.pos
-            instance.bg.size = instance.size
-        self.layout.bind(size=update_rect,pos=update_rect)
-        with self.layout.canvas.before:
-            self.layout.bg = Image(source='photos-strip.png', allow_stretch=True)
-        self.add_widget(self.layout)
-        self.path = None
+        super(PhotoStrip, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
+        self.strip = Image(source='photos-strip.png', allow_stretch=True, size_hint_y=2)
+        self.add_widget(self.strip)
 
-        self.image0 = red_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625})
-#        self.image0 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
-        self.layout.add_widget(self.image0)
-        self.image1 = green_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.6225})
-##        self.image1 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
-        self.layout.add_widget(self.image1)
-        self.image2 = blue_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.3799})
-##        self.image2 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
-        self.layout.add_widget(self.image2)
-        self.image3 = blank_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.1365})
-        self.layout.add_widget(self.image3)
+        self.image0 = image_button(source=None)
+        self.image0.bind(on_press=self.press_btn, on_release=self.release_btn)
+        self.strip.add_widget(self.image0)
+        self.image1 = image_button(source=None)
+        self.image1.bind(on_press=self.press_btn, on_release=self.release_btn)
+        self.strip.add_widget(self.image1)
+        self.image2 = image_button(source=None)
+        self.image2.bind(on_press=self.press_btn, on_release=self.release_btn)
+        self.strip.add_widget(self.image2)
+        self.image3 = image_button(source=None)
+        self.image3.bind(on_press=self.press_btn, on_release=self.release_btn)
+        self.strip.add_widget(self.image3)
+
+        self.strip.bind(size=self.update_buttons,pos=self.update_buttons)
+    def press_btn(self, *args):
+        kivy.logger.Logger.debug('PhotoStrip: pressed an image button: '+str(args))
+    def release_btn(self, *args):
+        kivy.logger.Logger.debug('PhotoStrip: released an image button: '+str(args))
+    def update_buttons(self, instance, value):
+        spacing = 20
+        padding = 25
+        offset = padding
+        for img in [self.image0, self.image1, self.image2, self.image3]:
+            img.size = (instance.norm_image_size[0]/60)*43, (instance.norm_image_size[1]-((spacing*3)+(padding*2)))/4
+            img.center_x = instance.center_x
+            img.center_y = instance.top-((img.height/2)+offset)
+            offset += img.height+spacing
 
 class Main(App):
     def pressed_back(self, *args):
@@ -279,7 +267,7 @@ class Main(App):
         ## Image viewer
         viewer_screen = Screen(name='viewer')
         viewer_screen.bind(on_enter=self.enter_viewer)
-        self.viewer = Viewer()
+        self.viewer = PhotoStrip()
         viewer_screen.bind(on_leave=self.viewer.clear_path)
         viewer_screen.add_widget(self.viewer)
 #        self.painter = PaintWidget()
