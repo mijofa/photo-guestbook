@@ -177,13 +177,11 @@ class PaintWidget(Widget):
 
 class Viewer(ScrollView):
     def set_path(self, path):
-        return
         self.path = path
         self.image0.source = os.path.join(path, '0.jpg')
         self.image1.source = os.path.join(path, '1.jpg')
         self.image2.source = os.path.join(path, '2.jpg')
     def clear_path(self, *args):
-        return
         self.path = None
         source = 'atlas://data/images/defaulttheme/filechooser_file'
         self.image0.source = source
@@ -191,23 +189,27 @@ class Viewer(ScrollView):
         self.image2.source = source
     def __init__(self, *args, **kwargs):
         super(Viewer, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
-#        self.grid = GridLayout(cols=1, spacing=8, size_hint_y=None, size_hint_x=0.7, pos_hint={'center_x': 0.5})
-        self.strip = Image(source='photos-strip.png', size_hint_y=2)
-        self.add_widget(self.strip)
+        self.layout = FloatLayout(size_hint_y=2)
+        def update_rect(instance, value):
+            instance.bg.pos = instance.pos
+            instance.bg.size = instance.size
+        self.layout.bind(size=update_rect,pos=update_rect)
+        with self.layout.canvas.before:
+            self.layout.bg = Image(source='photos-strip.png', allow_stretch=True)
+        self.add_widget(self.layout)
         self.path = None
-        return
 
-        self.image0 = red_canvas()
-#        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
-        self.add_widget(self.image0)
-        self.image1 = green_canvas()
-#        self.image1 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
-        self.add_widget(self.image1)
-        self.image2 = blue_canvas()
-#        self.image2 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
-        self.add_widget(self.image2)
-        self.image3 = blank_canvas()
-        self.add_widget(self.image3)
+        self.image0 = red_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625})
+#        self.image0 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
+        self.layout.add_widget(self.image0)
+        self.image1 = green_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.6225})
+##        self.image1 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
+        self.layout.add_widget(self.image1)
+        self.image2 = blue_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.3799})
+##        self.image2 = Image(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.8625}, source='atlas://data/images/defaulttheme/filechooser_file')
+        self.layout.add_widget(self.image2)
+        self.image3 = blank_canvas(size_hint=(0.391,0.208), pos_hint={'center_x': 0.5, 'center_y': 0.1365})
+        self.layout.add_widget(self.image3)
 
 class Main(App):
     def pressed_back(self, *args):
