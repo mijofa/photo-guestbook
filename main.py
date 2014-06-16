@@ -310,23 +310,23 @@ class Main(App):
             while filename % index in dircontents:
                 index += 1
             self.paint_screen.painter.save_png(os.path.join(savedir, filename % index))
-        return True
+        return False # I'm returning false here so that the button still triggers the next on_release event
     def pressed_home(self, *args):
         if self.screen_manager.current == 'painter':
             self.goto_screen('photostrip', 'right')
         elif self.screen_manager.current == 'chooser':
             self.chooser._show_progress()
             self.chooser._trigger_update()
-        return True
+        return False # I'm returning false here so that the button still triggers the next on_release event
     def pressed_back(self, *args):
         if self.screen_manager.current == 'photostrip':
             self.goto_screen('chooser', 'right')
         elif self.screen_manager.current == 'chooser':
             if os.path.samefile(self.chooser.path, PHOTOS_PATH):
-                return
+                return False # I'm returning false here so that the button still triggers the next on_release event
             self.chooser.rootpath = os.path.normpath(os.path.join(self.chooser.path, os.path.pardir))
             self.chooser.path = self.chooser.rootpath
-        return True
+        return False # I'm returning false here so that the button still triggers the next on_release event
     def goto_screen(self, screen_name, direction):
         self.screen_manager.transition.direction = direction
         self.screen_manager.current = screen_name
@@ -334,34 +334,57 @@ class Main(App):
         self.goto_screen('photostrip', 'left')
         self.photostrip.set_path(chooser.current_entry.path)
     def enter_chooser(self, *args):
-        self.win_btn.text = ''
-        self.home_btn.text = 'Refresh'
-        self.back_btn.text = '<-'
+        self.win_btn.opacity = 0
+        self.home_btn.opacity = 1
+        self.home_btn.background_normal = 'ic_action_refresh.png'
+        self.home_btn.background_down = self.home_btn.background_normal
+        self.back_btn.opacity = 1
+        self.back_btn.background_normal = 'ic_sysbar_back.png'
+        self.back_btn.background_down = self.back_btn.background_normal
         self.photostrip.clear_path()
     def enter_strip(self, *args):
-        self.win_btn.text = ''
-        self.home_btn.text = ''
-        self.back_btn.text = '<-'
+        self.win_btn.opacity = 0
+        self.home_btn.opacity = 0
+        self.back_btn.opacity = 1
+        self.back_btn.background_normal = 'ic_sysbar_back.png'
+        self.back_btn.background_down = self.back_btn.background_normal
     def enter_painter(self, *args):
-        self.win_btn.text = 'Save'
-        self.home_btn.text = 'X'
-        self.back_btn.text = ''
+        self.win_btn.opacity = 1
+        self.win_btn.background_normal = 'ic_action_save.png'
+#        self.win_btn.background_normal = 'ic_action_sd_storage.png'
+        self.win_btn.background_down = self.win_btn.background_normal
+        self.home_btn.opacity = 1
+        self.home_btn.background_normal = 'ic_action_discard.png'
+        self.home_btn.background_down = self.home_btn.background_normal
+        self.back_btn.opacity = 0
     def build(self):
         root = FloatLayout()
         self.screen_manager = ScreenManager(transition=SlideTransition(), size_hint=[0.925,1],pos_hint={'left': 1})
         root.add_widget(self.screen_manager)
 
+        def rend_circle(btn):
+            with btn.canvas:
+                Color(1,1,1,0.25)
+                btn.hl = Ellipse(pos=btn.pos, size=btn.size)
+        def derend_circle(btn):
+            btn.canvas.remove(btn.hl)
         ## Buttons.
         ## These are meant to work like the Android navbar would, and I have named them as such.
         # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
         self.win_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.8})
-        self.win_btn.bind(on_press=self.pressed_win)
+        self.win_btn.bind(on_press=rend_circle)
+        self.win_btn.bind(on_release=derend_circle)
+        self.win_btn.bind(on_release=self.pressed_win)
 
         self.home_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
-        self.home_btn.bind(on_press=self.pressed_home)
+        self.home_btn.bind(on_press=rend_circle)
+        self.home_btn.bind(on_release=derend_circle)
+        self.home_btn.bind(on_release=self.pressed_home)
 
         self.back_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.2})
-        self.back_btn.bind(on_press=self.pressed_back)
+        self.back_btn.bind(on_press=rend_circle)
+        self.back_btn.bind(on_release=derend_circle)
+        self.back_btn.bind(on_release=self.pressed_back)
 
         root.add_widget(self.win_btn)
         root.add_widget(self.home_btn)
