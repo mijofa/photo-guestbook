@@ -14,6 +14,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
@@ -174,21 +175,28 @@ class PaintWidget(Widget):
         if touch.ud.has_key('line_inner'):
             touch.ud['line_inner'].points = touch.ud['line_outer'].points
 
-class Viewer(GridLayout):
+class Viewer(ScrollView):
     def set_path(self, path):
+        return
         self.path = path
         self.image0.source = os.path.join(path, '0.jpg')
         self.image1.source = os.path.join(path, '1.jpg')
         self.image2.source = os.path.join(path, '2.jpg')
     def clear_path(self, *args):
+        return
         self.path = None
         source = 'atlas://data/images/defaulttheme/filechooser_file'
         self.image0.source = source
         self.image1.source = source
         self.image2.source = source
     def __init__(self, *args, **kwargs):
-        super(Viewer, self).__init__(rows=2, cols=2, padding=8, spacing=16, *args, **kwargs)
+        super(Viewer, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
+#        self.grid = GridLayout(cols=1, spacing=8, size_hint_y=None, size_hint_x=0.7, pos_hint={'center_x': 0.5})
+        self.strip = Image(source='photos-strip.png', size_hint_y=2)
+        self.add_widget(self.strip)
         self.path = None
+        return
+
         self.image0 = red_canvas()
 #        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image0)
@@ -214,7 +222,8 @@ class Main(App):
         return True
     def pressed_home(self, *args):
         if self.screen_manager.current == 'viewer':
-            self.painter.save_png('/sdcard/DCIM/tmp/blah.png')
+            pass
+#            self.painter.save_png('/sdcard/DCIM/tmp/blah.png')
         elif self.screen_manager.current == 'chooser':
             self.chooser._trigger_update()
         return True
@@ -271,9 +280,9 @@ class Main(App):
         self.viewer = Viewer()
         viewer_screen.bind(on_leave=self.viewer.clear_path)
         viewer_screen.add_widget(self.viewer)
-        self.painter = PaintWidget()
-        viewer_screen.bind(on_leave=lambda args: self.painter.canvas.clear())
-        viewer_screen.add_widget(self.painter)
+#        self.painter = PaintWidget()
+#        viewer_screen.bind(on_leave=lambda args: self.painter.canvas.clear())
+#        viewer_screen.add_widget(self.painter)
         self.screen_manager.add_widget(viewer_screen)
 
         return root
