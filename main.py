@@ -18,7 +18,7 @@ from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.core.window import Window
-from kivy.graphics import Rectangle, Color, Ellipse, Line
+from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, ClearBuffers, Translate
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -131,31 +131,64 @@ class blank_canvas(Widget):
 
 
 class PaintWidget(Widget):
+    def save_png(self, filename):
+        ### Kivy 1.8.1 has an export_to_png function in the widget class. I'm not using 1.8.1 so I'm writing my own.
+        ## Mostly copy-pasted from: https://github.com/kivy/kivy/blob/master/kivy/uix/widget.py (2014/06/16)
+        if self.parent is not None:
+            canvas_parent_index = self.parent.canvas.indexof(self.canvas)
+            self.parent.canvas.remove(self.canvas)
+        fbo = Fbo(size=self.size)
+        with fbo:
+            ClearColor(0, 0, 0, 0) # I changed this from 0,0,0,1 to 0,0,0,0 so that I could have a transparent background.
+            ClearBuffers()
+            Translate(-self.x, -self.y, 0)
+
+        fbo.add(self.canvas)
+        fbo.draw()
+        try:
+            fbo.texture.save(filename)
+            success = True
+            kivy.logger.Logger.debug("PaintWidget: Saved file %s" % filename)
+        except Exception as e:
+            success = False
+            kivy.logger.Logger.error("PaintWidget: Can't save file: %s" % filename)
+            kivy.logger.Logger.exception(e)
+        finally:
+            fbo.remove(self.canvas)
+
+            if self.parent is not None:
+                self.parent.canvas.insert(canvas_parent_index, self.canvas)
+
+            return success
     def on_touch_down(self, touch):
         with self.canvas:
-            Color(1,1,1, mode='rgb')
-            d = 4
-            Ellipse(pos=(touch.x - d / 2, touch.y - d / 2), size=(d, d))
-            touch.ud['line'] = Line(points=(touch.x, touch.y), width=d)
-            Color(0,0,0, mode='rgb')
-            touch.ud['line_inner'] = Line(points=touch.ud['line'].points, width=d-1)
+            Color(1,1,1)
+            diameter = 4
+            Ellipse(pos=(touch.x - diameter / 2, touch.y - diameter / 2), size=(diameter, diameter))
+            touch.ud['line_outer'] = Line(points=(touch.x, touch.y), width=diameter)
+            Color(0,0,0)
+            touch.ud['line_inner'] = Line(points=touch.ud['line_outer'].points, width=diameter-1)
     def on_touch_move(self, touch):
-        touch.ud['line'].points += [touch.x, touch.y]
-        touch.ud['line_inner'].points = touch.ud['line'].points
+        if touch.ud.has_key('line_outer'):
+            touch.ud['line_outer'].points += [touch.x, touch.y]
+        if touch.ud.has_key('line_inner'):
+            touch.ud['line_inner'].points = touch.ud['line_outer'].points
 
 class Viewer(GridLayout):
-    def set_image(self, path = None):
-        if type(path) != str and type(path) != unicode:
-            source = 'atlas://data/images/defaulttheme/filechooser_file'
-            self.image0.source = source
-            self.image1.source = source
-            self.image2.source = source
-            return
- #       self.image0.source = os.path.join(path, '0.jpg')
-  #      self.image1.source = os.path.join(path, '1.jpg')
-   #     self.image2.source = os.path.join(path, '2.jpg')
+    def set_path(self, path):
+        self.path = path
+        self.image0.source = os.path.join(path, '0.jpg')
+        self.image1.source = os.path.join(path, '1.jpg')
+        self.image2.source = os.path.join(path, '2.jpg')
+    def clear_path(self, *args):
+        self.path = None
+        source = 'atlas://data/images/defaulttheme/filechooser_file'
+        self.image0.source = source
+        self.image1.source = source
+        self.image2.source = source
     def __init__(self, *args, **kwargs):
         super(Viewer, self).__init__(rows=2, cols=2, padding=8, spacing=16, *args, **kwargs)
+        self.path = None
         self.image0 = red_canvas()
 #        self.image0 = Image(source='atlas://data/images/defaulttheme/filechooser_file')
         self.add_widget(self.image0)
@@ -178,17 +211,19 @@ class Main(App):
                 return
             self.chooser.rootpath = os.path.normpath(os.path.join(self.chooser.path, os.path.pardir))
             self.chooser.path = self.chooser.rootpath
+        return True
     def pressed_home(self, *args):
         if self.screen_manager.current == 'viewer':
-            self.painter.texture.save('/tmp/blah.jpg')
+            self.painter.save_png('/sdcard/DCIM/tmp/blah.png')
         elif self.screen_manager.current == 'chooser':
             self.chooser._trigger_update()
+        return True
     def pressed_win(self, *args):
         pass
     def select_folder(self, chooser):
         self.screen_manager.transition.direction = 'left'
         self.screen_manager.current = 'viewer'
-        self.viewer.set_image(chooser.current_entry.path)
+        self.viewer.set_path(chooser.current_entry.path)
     def enter_chooser(self, *args):
         self.home_btn.text = 'Refresh'
         self.back_btn.text = 'Back'
@@ -234,7 +269,7 @@ class Main(App):
         viewer_screen = Screen(name='viewer')
         viewer_screen.bind(on_enter=self.enter_viewer)
         self.viewer = Viewer()
-        viewer_screen.bind(on_leave=self.viewer.set_image)
+        viewer_screen.bind(on_leave=self.viewer.clear_path)
         viewer_screen.add_widget(self.viewer)
         self.painter = PaintWidget()
         viewer_screen.bind(on_leave=lambda args: self.painter.canvas.clear())
