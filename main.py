@@ -80,7 +80,7 @@ class blank_canvas(Widget):
         super(blank_canvas, self).__init__(*args)
         self.bind(size=self.draw_lines, pos=self.draw_lines)
     def draw_lines(self, *args):
-        line_dist = 40
+        line_dist = 80
         line_offset = 0
         num_lines = (self.height/line_dist)
         self.canvas.clear()
