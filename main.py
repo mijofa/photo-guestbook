@@ -65,8 +65,18 @@ Builder.load_string("""
 <image_button>
     canvas:
         Clear
+
+<blank_canvas>
+    canvas.before:
+        Color:
+            rgba: 1,1,1,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 """)
 
+class blank_canvas(Widget):
+    pass
 
 class FileChooserGalleryView(FileChooserIconView):
     thumbsize = dp(119)
@@ -145,7 +155,10 @@ class PaintWidget(Widget):
 class image_button(Button):
     def __init__(self, source = '', *args, **kwargs):
         super(image_button, self).__init__(*args, **kwargs)
-        self.img = Image(source=source, allow_stretch=True)
+        if type(source) == str:
+            self.img = Image(source=source, allow_stretch=True)
+        else:
+            self.img = source
         self.add_widget(self.img)
         self.bind(size=self.update_img, pos=self.update_img)
     def update_img(self, instance, value):
@@ -171,16 +184,16 @@ class PhotoStrip(ScrollView):
         self.strip = Image(source='photos-strip.png', allow_stretch=True, size_hint_y=2)
         self.add_widget(self.strip)
 
-        self.image0 = image_button(source=None)
+        self.image0 = image_button()
         self.image0.bind(on_press=self.press_btn, on_release=self.release_btn)
         self.strip.add_widget(self.image0)
-        self.image1 = image_button(source=None)
+        self.image1 = image_button()
         self.image1.bind(on_press=self.press_btn, on_release=self.release_btn)
         self.strip.add_widget(self.image1)
-        self.image2 = image_button(source=None)
+        self.image2 = image_button()
         self.image2.bind(on_press=self.press_btn, on_release=self.release_btn)
         self.strip.add_widget(self.image2)
-        self.image3 = image_button(source=None)
+        self.image3 = image_button(source=blank_canvas())
         self.image3.bind(on_press=self.press_btn, on_release=self.release_btn)
         self.strip.add_widget(self.image3)
 
