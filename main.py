@@ -357,9 +357,12 @@ class Main(App):
         self.home_btn.background_normal = 'ic_action_discard.png'
         self.home_btn.background_down = self.home_btn.background_normal
         self.back_btn.opacity = 0
+    def update_size(self, root, value):
+        self.screen_manager.size = (root.width-96, root.height)
     def build(self):
         root = FloatLayout()
-        self.screen_manager = ScreenManager(transition=SlideTransition(), size_hint=[0.925,1],pos_hint={'left': 1})
+        self.screen_manager = ScreenManager(transition=SlideTransition(),size_hint=[None,None], pos_hint={'left': 1})
+        root.bind(size=self.update_size)
         root.add_widget(self.screen_manager)
 
         def rend_circle(btn):
@@ -371,17 +374,17 @@ class Main(App):
         ## Buttons.
         ## These are meant to work like the Android navbar would, and I have named them as such.
         # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
-        self.win_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.8})
+        self.win_btn = Button(text='', size_hint=[None,None],size=[96,96],height=96,pos_hint={'right': 1, 'center_y': 0.8})
         self.win_btn.bind(on_press=rend_circle)
         self.win_btn.bind(on_release=derend_circle)
         self.win_btn.bind(on_release=self.pressed_win)
 
-        self.home_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.5})
+        self.home_btn = Button(text='', size_hint=[None,None],size=[96,96],pos_hint={'right': 1, 'center_y': 0.5})
         self.home_btn.bind(on_press=rend_circle)
         self.home_btn.bind(on_release=derend_circle)
         self.home_btn.bind(on_release=self.pressed_home)
 
-        self.back_btn = Button(text='', size_hint=[0.075,0.1],pos_hint={'right': 1, 'center_y': 0.2})
+        self.back_btn = Button(text='', size_hint=[None,None],size=[96,96],pos_hint={'right': 1, 'center_y': 0.2})
         self.back_btn.bind(on_press=rend_circle)
         self.back_btn.bind(on_release=derend_circle)
         self.back_btn.bind(on_release=self.pressed_back)
