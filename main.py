@@ -1,7 +1,6 @@
 PHOTOS_PATH = '/mnt/tmp'
 
 import os
-import sys
 import time
 
 import kivy
@@ -13,13 +12,11 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.core.window import Window
 from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, ClearBuffers, Translate
 from kivy.clock import Clock
 
@@ -182,33 +179,31 @@ class PaintWidget(Widget):
         self.canvas.clear()
         self.do_drawing = True
 
-class ViewerScreen(Screen):
+class ImageCanvas(Widget):
     def update_rect(self, instance, value):
-        instance.bg_col.size = instance.size
-        instance.bg_col.pos = instance.pos
+        self.img.size = self.size
+        self.img.pos = self.pos
+        self.blank.size = self.size
+        self.blank.pos = self.pos
         instance.label.center_x = instance.center_x # I should need to set the y pos of this, but it's magically placed in just the right spot.
     def __init__(self, *args, **kwargs):
-        super(ViewerScreen, self).__init__(*args, **kwargs)
-        self.source = ''
-        with self.canvas.before:
-            Color(0,0,0,1)
-            self.bg_col = Rectangle()
+        super(ImageCanvas, self).__init__(*args, **kwargs)
         with self.canvas.after:
             self.label = Label(font_size=32, color=(1,0,0,1))
         self.bind(size=self.update_rect, pos=self.update_rect)
 
         self.blank = blank_canvas()
-        self.blank.source = self.source
         self.add_widget(self.blank)
         self.blank.opacity = 1
 
-        self.img = Image(source=self.source, allow_stretch=True)
+        self.img = Image(source='', allow_stretch=True)
         self.add_widget(self.img)
-
-    def set_image(self, bg_filename, *args):
-        self.source = bg_filename
-        self.img.source = self.source
-
+    @property
+    def source(self):
+        return self.img.source
+    @source.setter
+    def source(self, value):
+        self.img.source = value
         if os.path.exists(self.source):
             self.blank.opacity = 0
             self.img.opacity = 1
@@ -216,30 +211,43 @@ class ViewerScreen(Screen):
             self.blank.opacity = 1
             self.img.opacity = 0
 
-class PaintScreen(ViewerScreen):
+class ViewerScreen(Screen):
+    def __init__(self, *args, **kwargs):
+        super(ViewerScreen, self).__init__(*args, **kwargs)
+        self.layout = FloatLayout()
+        self.add_widget(self.layout)
+        self.image = ImageCanvas(size_hint=(0.8,0.8), pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.layout.add_widget(self.image)
+
+class PaintScreen(Screen):
+    def update_bg(self, instance, value):
+        instance.bg_col.size = instance.size
+        instance.bg_col.pos = instance.pos
     def __init__(self, *args, **kwargs):
         super(PaintScreen, self).__init__(*args, **kwargs)
+
+        with self.canvas.before:
+            Color(0,0,0,1)
+            self.bg_col = Rectangle()
+        self.bind(size=self.update_bg, pos=self.update_bg)
+
+        self.image = ImageCanvas()
+        self.add_widget(self.image)
+
         self.painter = PaintWidget()
         self.add_widget(self.painter)
 
 class image_button(Button):
     def __init__(self, source = '', *args, **kwargs):
-        self.source = source
         super(image_button, self).__init__(*args, **kwargs)
 
         self.blank = blank_canvas(line_width=10)
-        self.blank.source = self.source
         self.add_widget(self.blank)
 
-        self.img = Image(source=self.source, allow_stretch=True)
+        self.img = Image(source='', allow_stretch=True)
         self.add_widget(self.img)
 
-        if os.path.exists(self.source):
-            self.blank.opacity = 0
-            self.img.opacity = 1
-        else:
-            self.blank.opacity = 1
-            self.img.opacity = 0
+        self.source = source
 
         self.bind(size=self.update_img, pos=self.update_img)
     def update_img(self, instance, value):
@@ -247,10 +255,13 @@ class image_button(Button):
         instance.blank.pos = instance.pos
         instance.img.size = instance.size
         instance.img.pos = instance.pos
-    def set_image(self, filename):
-        self.source = filename
-        self.img.source = self.source
-        if os.path.exists(self.source):
+    @property
+    def source(self):
+        return self.img.source
+    @source.setter
+    def source(self, value):
+        self.img.source = value
+        if os.path.exists(value):
             self.blank.opacity = 0
             self.img.opacity = 1
         else:
@@ -284,20 +295,18 @@ class PhotoStrip(ScrollView):
 
         self.strip.bind(size=self.update_buttons,pos=self.update_buttons)
     def set_path(self, path):
-        self.path = path
-        self.image0.set_image(os.path.join(path, '0.jpg'))
-        self.image1.set_image(os.path.join(path, '1.jpg'))
-        self.image2.set_image(os.path.join(path, '2.jpg'))
-        self.image3.set_image(os.path.join(path, 'blank'))
+        self.image0.source = os.path.join(path, '0.jpg')
+        self.image1.source = os.path.join(path, '1.jpg')
+        self.image2.source = os.path.join(path, '2.jpg')
+        self.image3.source = os.path.join(path, 'blank')
     def clear_path(self, *args):
         self.scroll_y = 1
         if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
             self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
-        self.path = None
-        source = ''
-        self.image0.set_image(source)
-        self.image1.set_image(source)
-        self.image2.set_image(source)
+        self.image0.source = ''
+        self.image1.source = ''
+        self.image2.source = ''
+        self.image3.source = ''
     def press_btn(self, btn):
         self.dispatch('on_press', btn.source)
     def release_btn(self, btn):
@@ -440,15 +449,15 @@ class Main(App):
 
         ## ImageViewer
         viewer_screen = ViewerScreen(name='viewer')
-        viewer_screen.bind(on_enter=lambda src:self.paint_screen.set_image(viewer_screen.source))
+        viewer_screen.bind(on_enter=lambda src:setattr(self.paint_screen.image,'source',viewer_screen.image.source))
 
         ## Photo strip
         photostrip_screen = Screen(name='photostrip')
         photostrip = PhotoStrip()
         photostrip_screen.add_widget(photostrip)
         photostrip.bind(
-                on_press=lambda src, fn: viewer_screen.set_image(fn),
-                on_release=lambda src, fn: self.goto_screen('viewer', 'left'),
+                on_press=lambda src,fn:setattr(viewer_screen.image,'source',fn),
+                on_release=lambda src,fn: self.goto_screen('viewer', 'left'),
         )
 
         # Set up the icons and functions for the navbar buttons
