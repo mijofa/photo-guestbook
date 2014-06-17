@@ -182,7 +182,7 @@ class PaintScreen(Screen):
     def __init__(self, *args, **kwargs):
         super(PaintScreen, self).__init__(*args, **kwargs)
         self.source = ''
-        with self.canvas:
+        with self.canvas.before:
             Color(0,0,0,1)
             self.bg_col = Rectangle()
 
@@ -278,7 +278,8 @@ class PhotoStrip(ScrollView):
         self.image3.set_image(os.path.join(path, 'blank'))
     def clear_path(self, *args):
         self.scroll_y = 1
-        self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
+        if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
+            self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
         self.path = None
         source = ''
         self.image0.set_image(source)
