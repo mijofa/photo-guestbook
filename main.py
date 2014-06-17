@@ -189,7 +189,7 @@ class PaintScreen(Screen):
             Color(0,0,0,1)
             self.bg_col = Rectangle()
         with self.canvas.after:
-            self.label = Label(font_size=16, color=(1,0,0,1))
+            self.label = Label(font_size=32, color=(1,0,0,1))
         self.bind(size=self.update_rect, pos=self.update_rect)
 
         self.blank = blank_canvas()
