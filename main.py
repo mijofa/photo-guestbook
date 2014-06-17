@@ -462,7 +462,7 @@ class Main(App):
         viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), None,                         lambda:self.goto_screen('chooser', 'right')]
 
         self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
-        self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('photostrip', 'right')]
+        self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('viewer', 'right')]
 
         # Finally, add the screens to the manager
         self.screen_manager.add_widget(chooser_screen)
