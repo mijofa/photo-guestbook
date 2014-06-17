@@ -18,8 +18,10 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.core.window import Window
 from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, ClearBuffers, Translate
+from kivy.clock import Clock
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -146,7 +148,7 @@ class PaintWidget(Widget):
         try:
             fbo.texture.save(filename)
             success = True
-            kivy.logger.Logger.info("PaintWidget: Saved file %s" % filename)
+            kivy.logger.Logger.debug("PaintWidget: Saved file %s" % filename)
         except Exception as e:
             success = False
             kivy.logger.Logger.error("PaintWidget: Can't save file: %s" % filename)
@@ -179,12 +181,16 @@ class PaintScreen(Screen):
     def update_rect(self, instance, value):
         instance.bg_col.size = instance.size
         instance.bg_col.pos = instance.pos
+        instance.label.center_x = instance.center_x # I should need to set the y pos of this, but it's magically placed in just the right spot.
     def __init__(self, *args, **kwargs):
         super(PaintScreen, self).__init__(*args, **kwargs)
         self.source = ''
         with self.canvas.before:
             Color(0,0,0,1)
             self.bg_col = Rectangle()
+        with self.canvas.after:
+            self.label = Label(font_size=16, color=(1,0,0,1))
+        self.bind(size=self.update_rect, pos=self.update_rect)
 
         self.blank = blank_canvas()
         self.blank.source = self.source
@@ -196,8 +202,6 @@ class PaintScreen(Screen):
 
         self.painter = PaintWidget()
         self.add_widget(self.painter)
-
-        self.bind(size=self.update_rect, pos=self.update_rect)
     def set_image(self, bg_filename, *args):
         self.source = bg_filename
         self.img.source = self.source
@@ -300,9 +304,13 @@ class PhotoStrip(ScrollView):
             offset += img.height+spacing
 
 class Main(App):
+    def finish_paint(self, good = True):
+        self.paint_screen.label.text = ''
+        if good:
+            self.goto_screen('photostrip', 'right')
     def pressed_win(self, *args):
         if self.screen_manager.current == 'painter':
-            savedir = os.path.normpath(self.paint_screen.painter.source+'.overlays'+os.path.sep)
+            savedir = os.path.normpath(self.paint_screen.source+'.overlays'+os.path.sep)
             if not os.path.isdir(savedir):
                 os.mkdir(savedir)
             index = 0
@@ -310,7 +318,14 @@ class Main(App):
             dircontents = os.listdir(savedir)
             while filename % index in dircontents:
                 index += 1
-            self.paint_screen.painter.save_png(os.path.join(savedir, filename % index))
+            if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
+                self.paint_screen.label.color = (0,0.75,0,1)
+                self.paint_screen.label.text = 'Saved'
+                Clock.schedule_once(lambda arg: self.finish_paint(True), 3)
+            else:
+                self.paint_screen.label.color = (0.75,0,0,1)
+                self.paint_screen.label.text = 'FAILED to save the drawing, sorry.'
+                Clock.schedule_once(lambda arg: self.finish_paint(False), 3)
         return False # I'm returning false here so that the button still triggers the next on_release event
     def pressed_home(self, *args):
         if self.screen_manager.current == 'painter':
@@ -369,7 +384,8 @@ class Main(App):
         def rend_circle(btn):
             with btn.canvas:
                 Color(1,1,1,0.25)
-                btn.hl = Ellipse(pos=btn.pos, size=btn.size)
+                size = (btn.size[0], btn.size[1]*1.5)
+                btn.hl = Ellipse(pos=( btn.pos[0]+((btn.size[0]/2)-(size[0]/2)), btn.pos[1]+((btn.size[1]/2)-(size[1]/2)) ), size=size)
         def derend_circle(btn):
             btn.canvas.remove(btn.hl)
         ## Buttons.
