@@ -309,94 +309,87 @@ class PhotoStrip(ScrollView):
             offset += img.height+spacing
 
 class Main(App):
+    ## "Navbar" button functions
+    def pressed_win(self, *args):
+        if 'btn_functions' in dir(self.screen_manager.current_screen) and self.screen_manager.current_screen.btn_functions[0] != None:
+            self.screen_manager.current_screen.btn_functions[0]()
+        return False # I'm returning false here so that the button still triggers the next on_release event
+    def pressed_home(self, *args):
+        if 'btn_functions' in dir(self.screen_manager.current_screen) and self.screen_manager.current_screen.btn_functions[1] != None:
+            self.screen_manager.current_screen.btn_functions[1]()
+        return False # I'm returning false here so that the button still triggers the next on_release event
+    def pressed_back(self, *args):
+        if 'btn_functions' in dir(self.screen_manager.current_screen) and self.screen_manager.current_screen.btn_functions[2] != None:
+            self.screen_manager.current_screen.btn_functions[2]()
+        return False # I'm returning false here so that the button still triggers the next on_release event
+    def update_buttons(self, *args):
+        if 'btns' in dir(self.screen_manager.current_screen):
+            win, home, back = self.screen_manager.current_screen.btns
+            if win == None:
+                self.win_btn.opacity = 0
+            else:
+                self.win_btn.opacity = 1
+                self.win_btn.background_normal = win
+                self.win_btn.background_down = self.win_btn.background_normal
+            if home == None:
+                self.home_btn.opacity = 0
+            else:
+                self.home_btn.opacity = 1
+                self.home_btn.background_normal = home
+                self.home_btn.background_down = self.home_btn.background_normal
+            if back == None:
+                self.back_btn.opacity = 0
+            else:
+                self.back_btn.opacity = 1
+                self.back_btn.background_normal = back
+                self.back_btn.background_down = self.back_btn.background_normal
+
+
+    ## These functions should probably be put somewhat inside the painter widget.
     def finish_paint(self, good = True):
         self.paint_screen.label.text = ''
         if good:
             self.goto_screen('photostrip', 'right')
-    def pressed_win(self, *args):
-        if self.screen_manager.current == 'painter':
-            savedir = os.path.normpath(self.paint_screen.source+'.overlays'+os.path.sep)
-            if not os.path.isdir(savedir):
-                os.mkdir(savedir)
-            index = 0
-            filename = '%02d.png'
-            dircontents = os.listdir(savedir)
-            while filename % index in dircontents:
-                index += 1
-            if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
-                self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
-                self.paint_screen.label.color = (0,0.75,0,1)
-                self.paint_screen.label.text = 'Saved'
-                Clock.schedule_once(lambda arg: self.finish_paint(True), 2)
-            else:
-                self.paint_screen.label.color = (0.75,0,0,1)
-                self.paint_screen.label.text = 'FAILED to save the drawing, sorry.'
-                Clock.schedule_once(lambda arg: self.finish_paint(False), 3)
-        return False # I'm returning false here so that the button still triggers the next on_release event
-    def pressed_home(self, *args):
-        if self.screen_manager.current == 'painter':
-            self.goto_screen('photostrip', 'right')
-        elif self.screen_manager.current == 'chooser':
-            self.chooser._show_progress()
-            self.chooser._trigger_update()
-        return False # I'm returning false here so that the button still triggers the next on_release event
-    def pressed_back(self, *args):
-        if self.screen_manager.current == 'photostrip':
-            self.goto_screen('chooser', 'right')
-        elif self.screen_manager.current == 'chooser':
-            if os.path.samefile(self.chooser.path, PHOTOS_PATH):
-                return False # I'm returning false here so that the button still triggers the next on_release event
-            self.chooser.rootpath = os.path.normpath(os.path.join(self.chooser.path, os.path.pardir))
-            self.chooser.path = self.chooser.rootpath
-        return False # I'm returning false here so that the button still triggers the next on_release event
+    def save_painter(self):
+        savedir = os.path.normpath(self.paint_screen.source+'.overlays'+os.path.sep)
+        if not os.path.isdir(savedir):
+            os.mkdir(savedir)
+        index = 0
+        filename = '%02d.png'
+        dircontents = os.listdir(savedir)
+        while filename % index in dircontents:
+            index += 1
+        if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
+            self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
+            self.paint_screen.label.color = (0,0.75,0,1)
+            self.paint_screen.label.text = 'Saved'
+            Clock.schedule_once(lambda arg: self.finish_paint(True), 2)
+        else:
+            self.paint_screen.label.color = (0.75,0,0,1)
+            self.paint_screen.label.text = 'FAILED to save the drawing, sorry.'
+            Clock.schedule_once(lambda arg: self.finish_paint(False), 3)
+
     def goto_screen(self, screen_name, direction):
         self.screen_manager.transition.direction = direction
         self.screen_manager.current = screen_name
-    def select_folder(self, chooser):
-        self.goto_screen('photostrip', 'left')
-        self.photostrip.set_path(chooser.current_entry.path)
-    def enter_chooser(self, *args):
-        self.win_btn.opacity = 0
-        self.home_btn.opacity = 1
-        self.home_btn.background_normal = 'ic_action_refresh.png'
-        self.home_btn.background_down = self.home_btn.background_normal
-        self.back_btn.opacity = 1
-        self.back_btn.background_normal = 'ic_sysbar_back.png'
-        self.back_btn.background_down = self.back_btn.background_normal
-        self.photostrip.clear_path()
-    def enter_strip(self, *args):
-        self.win_btn.opacity = 0
-        self.home_btn.opacity = 0
-        self.back_btn.opacity = 1
-        self.back_btn.background_normal = 'ic_sysbar_back.png'
-        self.back_btn.background_down = self.back_btn.background_normal
-    def enter_painter(self, *args):
-        self.win_btn.opacity = 1
-        self.win_btn.background_normal = 'ic_action_save.png'
-#        self.win_btn.background_normal = 'ic_action_sd_storage.png'
-        self.win_btn.background_down = self.win_btn.background_normal
-        self.home_btn.opacity = 1
-        self.home_btn.background_normal = 'ic_action_discard.png'
-        self.home_btn.background_down = self.home_btn.background_normal
-        self.back_btn.opacity = 0
+    # This function is just to keep the screen_manager size with window resizing
     def update_size(self, root, value):
         self.screen_manager.size = (root.width-96, root.height)
+
     def build(self):
         root = FloatLayout()
-        self.screen_manager = ScreenManager(transition=SlideTransition(),size_hint=[None,None], pos_hint={'left': 1})
-        root.bind(size=self.update_size)
-        root.add_widget(self.screen_manager)
 
+        ## "Navbar" Buttons
+        ## These are meant to work like the Android navbar would, and I have named them as such.
+        # These two functions are used for a indicator for the button being pressed.
         def rend_circle(btn):
             with btn.canvas:
                 Color(1,1,1,0.25)
                 size = (btn.size[0], btn.size[1]*1.5)
                 btn.hl = Ellipse(pos=( btn.pos[0]+((btn.size[0]/2)-(size[0]/2)), btn.pos[1]+((btn.size[1]/2)-(size[1]/2)) ), size=size)
+                Color(1,1,1,1) # Reset the color, otherwise the background goes dark
         def derend_circle(btn):
             btn.canvas.remove(btn.hl)
-        ## Buttons.
-        ## These are meant to work like the Android navbar would, and I have named them as such.
-        # I'd like to have 'back', 'refresh', 'save', & 'cancel' buttons. I don't know how well I can make this work on the navbar though.
         self.win_btn = Button(text='', size_hint=[None,None],size=[96,96],height=96,pos_hint={'right': 1, 'center_y': 0.8})
         self.win_btn.bind(on_press=rend_circle)
         self.win_btn.bind(on_release=derend_circle)
@@ -416,12 +409,11 @@ class Main(App):
         root.add_widget(self.home_btn)
         root.add_widget(self.back_btn)
 
-        ## FileChooser
-        chooser_screen = Screen(name='chooser')
-        chooser_screen.bind(on_enter=self.enter_chooser)
-        self.chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
-        self.chooser.bind(on_select_folder=self.select_folder)
-        chooser_screen.add_widget(self.chooser)
+        ## Screen Manager
+        self.screen_manager = ScreenManager(transition=SlideTransition(),size_hint=[None,None], pos_hint={'left': 1})
+        root.bind(size=self.update_size)
+        root.add_widget(self.screen_manager)
+        # Render the background
         def update_rect(instance, value):
             instance.bg.pos = instance.pos
             instance.bg.size = instance.size
@@ -431,21 +423,43 @@ class Main(App):
 
         ## Photo strip
         photostrip_screen = Screen(name='photostrip')
-        photostrip_screen.bind(on_enter=self.enter_strip)
-        self.photostrip = PhotoStrip()
-        photostrip_screen.add_widget(self.photostrip)
+        photostrip = PhotoStrip()
+        photostrip_screen.add_widget(photostrip)
 
+        ## FileChooser
+        chooser_screen = Screen(name='chooser')
+        chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
+        def select_folder(chooser, photostrip):
+            photostrip.set_path(chooser.current_entry.path)
+            self.goto_screen('photostrip', 'left')
+        chooser.bind(on_select_folder=lambda args:select_folder(chooser, photostrip))
+        chooser_screen.add_widget(chooser)
+
+
+        ## Painter
         self.paint_screen = PaintScreen(name='painter')
-        self.paint_screen.bind(on_enter=self.enter_painter)
         self.paint_screen.bind(on_leave=lambda src: self.paint_screen.painter.clear())
-        self.photostrip.bind(
+        photostrip.bind(
                 on_press=lambda src, fn: self.paint_screen.set_image(fn),
                 on_release=lambda src, fn: self.goto_screen('painter', 'left'),
         )
 
+        # Set up the icons and functions for the navbar buttons
+        chooser_screen.btns             = [None,                 'ic_action_refresh.png',      None]
+        chooser_screen.btn_functions    = [None,                 chooser._trigger_update,      None]
+        photostrip_screen.btns          = [None,                 None,                         'ic_sysbar_back.png']
+        photostrip_screen.btn_functions = [None,                 None,                         lambda:self.goto_screen('chooser', 'right')]
+        self.paint_screen.btns          = ['ic_action_save.png', None,                         'ic_action_discard.png']
+        self.paint_screen.btn_functions = [self.save_painter,    None,                         lambda:self.goto_screen('photostrip', 'right')]
+
+        # Finally, add the screens to the manager
         self.screen_manager.add_widget(chooser_screen)
         self.screen_manager.add_widget(photostrip_screen)
         self.screen_manager.add_widget(self.paint_screen)
+
+        # Set the navbar buttons from the variables set above
+        self.screen_manager.transition.bind(on_complete=self.update_buttons)
+        self.update_buttons()
 
         return root
 
