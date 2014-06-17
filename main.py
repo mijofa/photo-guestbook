@@ -76,28 +76,28 @@ Builder.load_string("""
 """)
 
 class blank_canvas(Widget):
-    def __init__(self, *args):
+    def __init__(self, line_width=40, *args):
         super(blank_canvas, self).__init__(*args)
+        self.line_width=line_width
         self.bind(size=self.draw_lines, pos=self.draw_lines)
     def draw_lines(self, *args):
-        line_dist = 40
         line_offset = 0
-        num_lines = (self.height/line_dist)
+        num_lines = (self.height/self.line_width)
         self.canvas.clear()
         with self.canvas:
             for i in xrange(1,int(num_lines/2)):
-                line_offset += line_dist
-                Color(0,0,0,1)
+                line_offset += self.line_width
+                Color(0,0,0,0.75)
                 Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
-                line_offset += line_dist
+                line_offset += self.line_width
                 Color(0.5,0.5,1,0.5)
                 Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
-            line_offset += line_dist
-            Color(0,0,0,1)
+            line_offset += self.line_width
+            Color(0,0,0,0.75)
             Line(width=1, points=[self.pos[0], self.pos[1]+line_offset, self.pos[0]+self.width, self.pos[1]+line_offset])
 
             Color(1,0,0,0.25)
-            Line(width=1.5, points=[self.pos[0]+(line_dist*1.5), self.pos[1]+self.height, self.pos[0]+(line_dist*1.5), self.pos[1]])
+            Line(width=1.5, points=[self.pos[0]+(self.line_width*1.5), self.pos[1]+self.height, self.pos[0]+(self.line_width*1.5), self.pos[1]])
 
 class FileChooserGalleryView(FileChooserIconView):
     thumbsize = dp(119)
@@ -214,7 +214,7 @@ class image_button(Button):
         self.source = source
         super(image_button, self).__init__(*args, **kwargs)
 
-        self.blank = blank_canvas()
+        self.blank = blank_canvas(line_width=10)
         self.blank.source = self.source
         self.add_widget(self.blank)
 
