@@ -182,13 +182,13 @@ class PaintWidget(Widget):
         self.canvas.clear()
         self.do_drawing = True
 
-class PaintScreen(Screen):
+class ViewerScreen(Screen):
     def update_rect(self, instance, value):
         instance.bg_col.size = instance.size
         instance.bg_col.pos = instance.pos
         instance.label.center_x = instance.center_x # I should need to set the y pos of this, but it's magically placed in just the right spot.
     def __init__(self, *args, **kwargs):
-        super(PaintScreen, self).__init__(*args, **kwargs)
+        super(ViewerScreen, self).__init__(*args, **kwargs)
         self.source = ''
         with self.canvas.before:
             Color(0,0,0,1)
@@ -205,8 +205,6 @@ class PaintScreen(Screen):
         self.img = Image(source=self.source, allow_stretch=True)
         self.add_widget(self.img)
 
-        self.painter = PaintWidget()
-        self.add_widget(self.painter)
     def set_image(self, bg_filename, *args):
         self.source = bg_filename
         self.img.source = self.source
@@ -217,6 +215,12 @@ class PaintScreen(Screen):
         else:
             self.blank.opacity = 1
             self.img.opacity = 0
+
+class PaintScreen(ViewerScreen):
+    def __init__(self, *args, **kwargs):
+        super(PaintScreen, self).__init__(*args, **kwargs)
+        self.painter = PaintWidget()
+        self.add_widget(self.painter)
 
 class image_button(Button):
     def __init__(self, source = '', *args, **kwargs):
@@ -421,11 +425,6 @@ class Main(App):
         with self.screen_manager.canvas.before:
             self.screen_manager.bg = Rectangle(source='background.png')
 
-        ## Photo strip
-        photostrip_screen = Screen(name='photostrip')
-        photostrip = PhotoStrip()
-        photostrip_screen.add_widget(photostrip)
-
         ## FileChooser
         chooser_screen = Screen(name='chooser')
         chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
@@ -435,26 +434,40 @@ class Main(App):
         chooser.bind(on_select_folder=lambda args:select_folder(chooser, photostrip))
         chooser_screen.add_widget(chooser)
 
-
         ## Painter
         self.paint_screen = PaintScreen(name='painter')
         self.paint_screen.bind(on_leave=lambda src: self.paint_screen.painter.clear())
+
+        ## ImageViewer
+        viewer_screen = ViewerScreen(name='viewer')
+        viewer_screen.bind(on_enter=lambda src:self.paint_screen.set_image(viewer_screen.source))
+
+        ## Photo strip
+        photostrip_screen = Screen(name='photostrip')
+        photostrip = PhotoStrip()
+        photostrip_screen.add_widget(photostrip)
         photostrip.bind(
-                on_press=lambda src, fn: self.paint_screen.set_image(fn),
-                on_release=lambda src, fn: self.goto_screen('painter', 'left'),
+                on_press=lambda src, fn: viewer_screen.set_image(fn),
+                on_release=lambda src, fn: self.goto_screen('viewer', 'left'),
         )
 
         # Set up the icons and functions for the navbar buttons
-        chooser_screen.btns             = [None,                 'ic_action_refresh.png',      None]
-        chooser_screen.btn_functions    = [None,                 chooser._trigger_update,      None]
-        photostrip_screen.btns          = [None,                 None,                         'ic_sysbar_back.png']
-        photostrip_screen.btn_functions = [None,                 None,                         lambda:self.goto_screen('chooser', 'right')]
-        self.paint_screen.btns          = ['ic_action_save.png', None,                         'ic_action_discard.png']
-        self.paint_screen.btn_functions = [self.save_painter,    None,                         lambda:self.goto_screen('photostrip', 'right')]
+        chooser_screen.btns             = [None,                                       'ic_action_refresh.png',      None]
+        chooser_screen.btn_functions    = [None,                                       chooser._trigger_update,      None]
+
+        photostrip_screen.btns          = [None,                                       None,                         'ic_sysbar_back.png']
+        photostrip_screen.btn_functions = [None,                                       None,                         lambda:self.goto_screen('chooser', 'right')]
+
+        viewer_screen.btns              = ['ic_action_edit.png',                       None,                         'ic_sysbar_back.png']
+        viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), None,                         lambda:self.goto_screen('chooser', 'right')]
+
+        self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
+        self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('photostrip', 'right')]
 
         # Finally, add the screens to the manager
         self.screen_manager.add_widget(chooser_screen)
         self.screen_manager.add_widget(photostrip_screen)
+        self.screen_manager.add_widget(viewer_screen)
         self.screen_manager.add_widget(self.paint_screen)
 
         # Set the navbar buttons from the variables set above
