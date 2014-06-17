@@ -131,7 +131,9 @@ class FileChooserGalleryView(FileChooserIconView):
         return time.ctime(os.path.getmtime(ctx.path))
 
 class PaintWidget(Widget):
+    do_drawing = True
     def save_png(self, filename):
+        self.do_drawing = False
         ### Kivy 1.8.1 has an export_to_png function in the widget class. I'm not using 1.8.1 so I'm writing my own.
         ## Mostly copy-pasted from: https://github.com/kivy/kivy/blob/master/kivy/uix/widget.py (2014/06/16)
         if self.parent is not None:
@@ -159,16 +161,18 @@ class PaintWidget(Widget):
             if self.parent is not None:
                 self.parent.canvas.insert(canvas_parent_index, self.canvas)
 
+            self.do_drawing = True
             return success
     def on_touch_down(self, touch):
-        with self.canvas:
-            Color(1,1,1)
-            diameter = 4
-            Ellipse(pos=(touch.x-(diameter/2), touch.y-(diameter/2)), size=(diameter, diameter))
-            touch.ud['line_outer'] = Line(points=(touch.x, touch.y), width=diameter)
-            Color(0,0,0)
-            Ellipse(pos=(touch.x-((diameter-1)/2), touch.y-((diameter-1)/2)), size=(diameter-1, diameter-1))
-            touch.ud['line_inner'] = Line(points=touch.ud['line_outer'].points, width=diameter-1)
+        if self.do_drawing:
+            with self.canvas:
+                Color(1,1,1)
+                diameter = 4
+                Ellipse(pos=(touch.x-(diameter/2), touch.y-(diameter/2)), size=(diameter, diameter))
+                touch.ud['line_outer'] = Line(points=(touch.x, touch.y), width=diameter)
+                Color(0,0,0)
+                Ellipse(pos=(touch.x-((diameter-1)/2), touch.y-((diameter-1)/2)), size=(diameter-1, diameter-1))
+                touch.ud['line_inner'] = Line(points=touch.ud['line_outer'].points, width=diameter-1)
     def on_touch_move(self, touch):
         if touch.ud.has_key('line_outer'):
             touch.ud['line_outer'].points += [touch.x, touch.y]
@@ -176,6 +180,7 @@ class PaintWidget(Widget):
             touch.ud['line_inner'].points = touch.ud['line_outer'].points
     def clear(self):
         self.canvas.clear()
+        self.do_drawing = True
 
 class PaintScreen(Screen):
     def update_rect(self, instance, value):
@@ -319,9 +324,10 @@ class Main(App):
             while filename % index in dircontents:
                 index += 1
             if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
+                self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
                 self.paint_screen.label.color = (0,0.75,0,1)
                 self.paint_screen.label.text = 'Saved'
-                Clock.schedule_once(lambda arg: self.finish_paint(True), 3)
+                Clock.schedule_once(lambda arg: self.finish_paint(True), 2)
             else:
                 self.paint_screen.label.color = (0.75,0,0,1)
                 self.paint_screen.label.text = 'FAILED to save the drawing, sorry.'
