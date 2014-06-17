@@ -4,8 +4,9 @@ import os
 import time
 
 import kivy
-if kivy.platform == 'android':
+if kivy.platform() == 'android':
     PHOTOS_PATH = '/sdcard/DCIM'
+    kivy.logger.Logger.debug(str(kivy.platform()))
 from kivy.metrics import dp
 from kivy.app import App
 from kivy.lang import Builder
@@ -360,11 +361,11 @@ class Main(App):
 
     ## These functions should probably be put somewhat inside the painter widget.
     def finish_paint(self, good = True):
-        self.paint_screen.label.text = ''
+        self.paint_screen.image.label.text = ''
         if good:
             self.goto_screen('photostrip', 'right')
     def save_painter(self):
-        savedir = os.path.normpath(self.paint_screen.source+'.overlays'+os.path.sep)
+        savedir = os.path.normpath(self.paint_screen.image.source+'.overlays'+os.path.sep)
         if not os.path.isdir(savedir):
             os.mkdir(savedir)
         index = 0
@@ -374,12 +375,12 @@ class Main(App):
             index += 1
         if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
             self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
-            self.paint_screen.label.color = (0,0.75,0,1)
-            self.paint_screen.label.text = 'Saved'
+            self.paint_screen.image.label.color = (0,0.75,0,1)
+            self.paint_screen.image.label.text = 'Saved'
             Clock.schedule_once(lambda arg: self.finish_paint(True), 2)
         else:
-            self.paint_screen.label.color = (0.75,0,0,1)
-            self.paint_screen.label.text = 'FAILED to save the drawing, sorry.'
+            self.paint_screen.image.label.color = (0.75,0,0,1)
+            self.paint_screen.image.label.text = 'FAILED to save the drawing, sorry.'
             Clock.schedule_once(lambda arg: self.finish_paint(False), 3)
 
     def goto_screen(self, screen_name, direction):
