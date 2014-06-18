@@ -296,18 +296,13 @@ class PhotoStrip(ScrollView):
 
         self.strip.bind(size=self.update_buttons,pos=self.update_buttons)
     def set_path(self, path):
+        self.scroll_y = 1
+        if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
+            self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
         self.image0.source = os.path.join(path, '0.jpg')
         self.image1.source = os.path.join(path, '1.jpg')
         self.image2.source = os.path.join(path, '2.jpg')
         self.image3.source = os.path.join(path, 'blank')
-    def clear_path(self, *args):
-        self.scroll_y = 1
-        if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
-            self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
-        self.image0.source = ''
-        self.image1.source = ''
-        self.image2.source = ''
-        self.image3.source = ''
     def press_btn(self, btn):
         self.dispatch('on_press', btn.source)
     def release_btn(self, btn):
@@ -323,6 +318,8 @@ class PhotoStrip(ScrollView):
             offset += img.height+spacing
 
 class Main(App):
+    # These are to handle Android switching away from the app or locking the screen.
+    # I don't want to do anything on pause, but I do want to go back to the main screen if it was paused for a while.
     def on_pause(self):
         kivy.logger.Logger.debug('Main: pausing')
         self.pause_time = time.time()
@@ -331,6 +328,10 @@ class Main(App):
         kivy.logger.Logger.debug('Main: resuming')
         if time.time()-self.pause_time > 5:
             self.screen_manager.current = 'chooser'
+
+    # This disables kivy's settings panel, normally accessible by pressing F1
+    def open_settings(self, *args):
+        pass
 
     ## "Navbar" button functions
     def pressed_win(self, *args):
