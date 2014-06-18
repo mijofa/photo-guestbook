@@ -477,8 +477,8 @@ class Main(App):
         photostrip_screen.btns          = [None,                                       None,                         'ic_sysbar_back.png']
         photostrip_screen.btn_functions = [None,                                       None,                         lambda:self.goto_screen('chooser', 'right')]
 
-        viewer_screen.btns              = ['ic_action_edit.png',                       None,                         'ic_sysbar_back.png']
-        viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), None,                         lambda:self.goto_screen('chooser', 'right')]
+        viewer_screen.btns              = ['ic_action_new_edit.png',                   None,                         'ic_sysbar_back.png']
+        viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), None,                         lambda:self.goto_screen('photostrip', 'right')]
 
         self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
         self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('viewer', 'right')]
