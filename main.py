@@ -323,6 +323,15 @@ class PhotoStrip(ScrollView):
             offset += img.height+spacing
 
 class Main(App):
+    def on_pause(self):
+        kivy.logger.Logger.debug('Main: pausing')
+        self.pause_time = time.time()
+        return True
+    def on_resume(self):
+        kivy.logger.Logger.debug('Main: resuming')
+        if time.time()-self.pause_time > 5:
+            self.screen_manager.current = 'chooser'
+
     ## "Navbar" button functions
     def pressed_win(self, *args):
         if 'btn_functions' in dir(self.screen_manager.current_screen) and self.screen_manager.current_screen.btn_functions[0] != None:
