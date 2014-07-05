@@ -1,3 +1,4 @@
+#!/usr/bin/python
 PHOTOS_PATH = '/mnt/tmp'
 
 import os
