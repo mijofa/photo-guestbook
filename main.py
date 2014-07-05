@@ -14,6 +14,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.scatter import Scatter
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
@@ -131,18 +132,21 @@ class FileChooserGalleryView(FileChooserIconView):
 
 class PaintWidget(Widget):
     do_drawing = True
+    done_draw = False
     def save_png(self, filename):
+        if not self.done_draw: # Don't save a blank drawing.
+            return False
         self.do_drawing = False
         ### Kivy 1.8.1 has an export_to_png function in the widget class. I'm not using 1.8.1 so I'm writing my own.
         ## Mostly copy-pasted from: https://github.com/kivy/kivy/blob/master/kivy/uix/widget.py (2014/06/16)
         if self.parent is not None:
             canvas_parent_index = self.parent.canvas.indexof(self.canvas)
             self.parent.canvas.remove(self.canvas)
-        fbo = Fbo(size=self.size)
+        fbo = Fbo(size=self.size_const)
         with fbo:
             ClearColor(0, 0, 0, 0) # I changed this from 0,0,0,1 to 0,0,0,0 so that I could have a transparent background.
             ClearBuffers()
-            Translate(-self.x, -self.y, 0)
+            Translate(self.draw_const[0], -self.draw_const[2], 0)
 
         fbo.add(self.canvas)
         fbo.draw()
@@ -164,15 +168,28 @@ class PaintWidget(Widget):
             return success
     def on_touch_down(self, touch):
         if self.do_drawing:
-            with self.canvas:
-                Color(1,1,1)
-                diameter = 4
-                Ellipse(pos=(touch.x-(diameter/2), touch.y-(diameter/2)), size=(diameter, diameter))
-                touch.ud['line_outer'] = Line(points=(touch.x, touch.y), width=diameter)
-                Color(0,0,0)
-                Ellipse(pos=(touch.x-((diameter-1)/2), touch.y-((diameter-1)/2)), size=(diameter-1, diameter-1))
-                touch.ud['line_inner'] = Line(points=touch.ud['line_outer'].points, width=diameter-1)
+            center = self.size[0]/2, self.size[1]/2
+            const_halved = self.size_const[0]/2, self.size_const[1]/2
+            self.draw_const = [center[0]-const_halved[0], center[0]+const_halved[0], center[1]-const_halved[1], center[1]+const_halved[1]]
+            if touch.x > self.draw_const[0] and touch.x < self.draw_const[1] and touch.y > self.draw_const[2] and touch.y < self.draw_const[3]:
+                self.done_draw = True
+                with self.canvas:
+                    Color(1,1,1)
+                    diameter = 4
+                    Ellipse(pos=(touch.x-(diameter/2), touch.y-(diameter/2)), size=(diameter, diameter))
+                    touch.ud['line_outer'] = Line(points=(touch.x, touch.y), width=diameter)
+                    Color(0,0,0)
+                    Ellipse(pos=(touch.x-((diameter-1)/2), touch.y-((diameter-1)/2)), size=(diameter-1, diameter-1))
+                    touch.ud['line_inner'] = Line(points=touch.ud['line_outer'].points, width=diameter-1)
     def on_touch_move(self, touch):
+        if touch.x < self.draw_const[0]:
+            touch.x = self.draw_const[0]
+        if touch.x > self.draw_const[1]:
+            touch.x = self.draw_const[1]
+        if touch.y < self.draw_const[2]:
+            touch.y = self.draw_const[2]
+        if touch.y > self.draw_const[3]:
+            touch.y = self.draw_const[3]
         if touch.ud.has_key('line_outer'):
             touch.ud['line_outer'].points += [touch.x, touch.y]
         if touch.ud.has_key('line_inner'):
@@ -180,6 +197,7 @@ class PaintWidget(Widget):
     def clear(self):
         self.canvas.clear()
         self.do_drawing = True
+        self.done_draw = False
 
 class ImageCanvas(Widget):
     def update_rect(self, instance, value):
@@ -214,17 +232,37 @@ class ImageCanvas(Widget):
             self.img.opacity = 0
 
 class ViewerScreen(Screen):
+    def drawing_toggle(self, *args):
+        if self.btns[1] == 'ic_action_view_image.png':
+            self.btns[1] = 'ic_action_view_drawing.png'
+        elif self.btns[1] == 'ic_action_view_drawing.png':
+            self.btns[1] = 'ic_action_view_image.png'
+        app.update_buttons()
+    def set_image(self, img_fn):
+        self.image.source = img_fn
+        if os.path.isdir(img_fn+'.overlays'):
+            self.btns[1] = 'ic_action_view_image.png'
+            self.overlay.color = (1,1,1,1)
+            self.overlay.source = os.path.join(img_fn+'.overlays', sorted(os.listdir(img_fn+'.overlays'))[-1])
+        print self.size, self.layout.size, self.both.size
     def __init__(self, *args, **kwargs):
         super(ViewerScreen, self).__init__(*args, **kwargs)
         self.layout = FloatLayout()
         self.add_widget(self.layout)
-        self.image = ImageCanvas(size_hint=(0.8,0.8), pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.layout.add_widget(self.image)
+
+        self.image = ImageCanvas(size_hint=[1,1], pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.overlay = Image(size_hint=[1,1], color=(0,0,0,0), pos_hint={'center_x': 0.5, 'center_y': 0.5})
+
+        self.both = Scatter(size_hint=[1,1])
+        self.both.add_widget(self.image)
+        self.both.add_widget(self.overlay)
+        self.layout.add_widget(self.both)
 
 class PaintScreen(Screen):
     def update_bg(self, instance, value):
         instance.bg_col.size = instance.size
         instance.bg_col.pos = instance.pos
+        self.painter.size_const = self.image.img.get_norm_image_size()
     def __init__(self, *args, **kwargs):
         super(PaintScreen, self).__init__(*args, **kwargs)
 
@@ -468,7 +506,7 @@ class Main(App):
         photostrip = PhotoStrip()
         photostrip_screen.add_widget(photostrip)
         photostrip.bind(
-                on_press=lambda src,fn:setattr(viewer_screen.image,'source',fn),
+                on_press=lambda src,fn:viewer_screen.set_image(fn),
                 on_release=lambda src,fn: self.goto_screen('viewer', 'left'),
         )
 
@@ -480,7 +518,7 @@ class Main(App):
         photostrip_screen.btn_functions = [None,                                       None,                         lambda:self.goto_screen('chooser', 'right')]
 
         viewer_screen.btns              = ['ic_action_new_edit.png',                   None,                         'ic_sysbar_back.png']
-        viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), None,                         lambda:self.goto_screen('photostrip', 'right')]
+        viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), viewer_screen.drawing_toggle, lambda:self.goto_screen('photostrip', 'right')]
 
         self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
         self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('viewer', 'right')]
@@ -497,4 +535,6 @@ class Main(App):
 
         return root
 
-Main().run()
+global app
+app = Main()
+app.run()
