@@ -449,6 +449,11 @@ class Main(App):
     def build(self):
         root = FloatLayout()
 
+        ## Screen Manager
+        self.screen_manager = ScreenManager(transition=SlideTransition(),size_hint=[None,None], pos_hint={'left': 1})
+        root.bind(size=self.update_size)
+        root.add_widget(self.screen_manager)
+
         ## "Navbar" Buttons
         ## These are meant to work like the Android navbar would, and I have named them as such.
         # These two functions are used for a indicator for the button being pressed.
@@ -479,10 +484,6 @@ class Main(App):
         root.add_widget(self.home_btn)
         root.add_widget(self.back_btn)
 
-        ## Screen Manager
-        self.screen_manager = ScreenManager(transition=SlideTransition(),size_hint=[None,None], pos_hint={'left': 1})
-        root.bind(size=self.update_size)
-        root.add_widget(self.screen_manager)
         # Render the background
         def update_rect(instance, value):
             instance.bg.pos = instance.pos
