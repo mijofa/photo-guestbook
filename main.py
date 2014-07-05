@@ -242,11 +242,13 @@ class ViewerScreen(Screen):
         self.image.source = img_fn
         if os.path.isdir(img_fn+'.overlays'):
             self.btns[1] = 'ic_action_view_image.png'
-            self.overlay.color = (1,1,1,1)
             self.overlay.source = os.path.join(img_fn+'.overlays', sorted(os.listdir(img_fn+'.overlays'))[-1])
-        self.both.pos = [0,0]
-        self.both.size = [0,0]
+            self.both.add_widget(self.overlay)
+        else:
+            self.both.remove_widget(self.overlay)
+        self.both.scale = 1
         self.both.rotation = 0
+        self.both.pos = [0,0]
     def __init__(self, *args, **kwargs):
         super(ViewerScreen, self).__init__(*args, **kwargs)
         self.layout = FloatLayout()
@@ -257,7 +259,6 @@ class ViewerScreen(Screen):
 
         self.both = Scatter(size_hint=[1,1])
         self.both.add_widget(self.image)
-        self.both.add_widget(self.overlay)
         self.layout.add_widget(self.both)
         self.both.bind(size=self.fix_size)
     def fix_size(self, *args):
