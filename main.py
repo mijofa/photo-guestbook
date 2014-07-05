@@ -244,19 +244,25 @@ class ViewerScreen(Screen):
             self.btns[1] = 'ic_action_view_image.png'
             self.overlay.color = (1,1,1,1)
             self.overlay.source = os.path.join(img_fn+'.overlays', sorted(os.listdir(img_fn+'.overlays'))[-1])
-        print self.size, self.layout.size, self.both.size
+        self.both.pos = [0,0]
+        self.both.size = [0,0]
+        self.both.rotation = 0
     def __init__(self, *args, **kwargs):
         super(ViewerScreen, self).__init__(*args, **kwargs)
         self.layout = FloatLayout()
         self.add_widget(self.layout)
 
-        self.image = ImageCanvas(size_hint=[1,1], pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.overlay = Image(size_hint=[1,1], color=(0,0,0,0), pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.image = ImageCanvas(pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.overlay = Image(pos_hint={'center_x': 0.5, 'center_y': 0.5})
 
         self.both = Scatter(size_hint=[1,1])
         self.both.add_widget(self.image)
         self.both.add_widget(self.overlay)
         self.layout.add_widget(self.both)
+        self.both.bind(size=self.fix_size)
+    def fix_size(self, *args):
+        self.image.size = self.both.size
+        self.overlay.size = self.both.size
 
 class PaintScreen(Screen):
     def update_bg(self, instance, value):
