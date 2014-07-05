@@ -22,6 +22,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, ClearBuffers, Translate
 from kivy.clock import Clock
+from kivy.uix.widget import WidgetException
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -130,7 +131,7 @@ class FileChooserGalleryView(FileChooserIconView):
     def get_time(self, ctx):
         return time.ctime(os.path.getmtime(ctx.path))
 
-class PaintWidget(Widget):
+class PaintWidget(Image):
     do_drawing = True
     done_draw = False
     def save_png(self, filename):
@@ -235,16 +236,23 @@ class ViewerScreen(Screen):
     def drawing_toggle(self, *args):
         if self.btns[1] == 'ic_action_view_image.png':
             self.btns[1] = 'ic_action_view_drawing.png'
+            self.both.remove_widget(self.overlay)
         elif self.btns[1] == 'ic_action_view_drawing.png':
             self.btns[1] = 'ic_action_view_image.png'
+            self.both.add_widget(self.overlay)
         app.update_buttons()
     def set_image(self, img_fn):
         self.image.source = img_fn
         if os.path.isdir(img_fn+'.overlays'):
             self.btns[1] = 'ic_action_view_image.png'
             self.overlay.source = os.path.join(img_fn+'.overlays', sorted(os.listdir(img_fn+'.overlays'))[-1])
-            self.both.add_widget(self.overlay)
+            app.paint_screen.painter.color = (1,1,1,1)
+            app.paint_screen.painter.source = self.overlay.source
+            try: self.both.add_widget(self.overlay)
+            except WidgetException: pass # The overlay widget may already be added, in which case I don't care.
         else:
+            app.paint_screen.painter.color = (0,0,0,0)
+            self.btns[1] = None
             self.both.remove_widget(self.overlay)
         self.both.scale = 1
         self.both.rotation = 0
