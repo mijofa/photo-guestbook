@@ -16,7 +16,7 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.image import Image
+from kivy.uix.image import AsyncImage
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -44,7 +44,7 @@ Builder.load_string("""
             size: root.size
             source: 'atlas://data/images/defaulttheme/filechooser_selected'
 
-    Image:
+    AsyncImage:
         size: ctx.controller().thumbsize,ctx.controller().thumbsize
         source: ctx.controller().get_image(ctx)
         pos: root.x + dp(24), root.y + dp(40)
@@ -131,7 +131,7 @@ class FileChooserGalleryView(FileChooserIconView):
     def get_time(self, ctx):
         return time.ctime(os.path.getmtime(ctx.path))
 
-class PaintWidget(Image):
+class PaintWidget(AsyncImage):
     do_drawing = True
     done_draw = False
     def save_png(self, filename):
@@ -217,7 +217,7 @@ class ImageCanvas(Widget):
         self.add_widget(self.blank)
         self.blank.opacity = 1
 
-        self.img = Image(source='', allow_stretch=True)
+        self.img = AsyncImage(source='', allow_stretch=True)
         self.add_widget(self.img)
     @property
     def source(self):
@@ -263,7 +263,7 @@ class ViewerScreen(Screen):
         self.add_widget(self.layout)
 
         self.image = ImageCanvas(pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.overlay = Image(pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.overlay = AsyncImage(pos_hint={'center_x': 0.5, 'center_y': 0.5})
 
         self.both = Scatter(size_hint=[1,1])
         self.both.add_widget(self.image)
@@ -299,7 +299,7 @@ class image_button(Button):
         self.blank = blank_canvas(line_width=10)
         self.add_widget(self.blank)
 
-        self.img = Image(source='', allow_stretch=True)
+        self.img = AsyncImage(source='', allow_stretch=True)
         self.add_widget(self.img)
 
         self.source = source
@@ -332,7 +332,7 @@ class PhotoStrip(ScrollView):
         super(PhotoStrip, self).__init__(size_hint=(1,1), pos_hint={'center_x': 0.5, 'center_y': 0.5}, do_scroll_x=False, *args, **kwargs)
         self.register_event_type('on_press')
         self.register_event_type('on_release')
-        self.strip = Image(source='photos-strip.png', allow_stretch=True, size_hint_y=1.8)
+        self.strip = AsyncImage(source='photos-strip.png', allow_stretch=True, size_hint_y=1.8)
         self.add_widget(self.strip)
 
         self.image0 = image_button()
