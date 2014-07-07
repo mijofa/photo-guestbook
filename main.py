@@ -24,6 +24,10 @@ from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, Clea
 from kivy.clock import Clock
 from kivy.uix.widget import WidgetException
 
+import filesystemhttp
+
+filesystem = filesystemhttp.FileSystemLocal()
+
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
     locked: False
@@ -119,8 +123,8 @@ class FileChooserGalleryView(FileChooserIconView):
         if ctx.path == '../':
             return 'atlas://data/images/defaulttheme/filechooser_folder'
         elif ctx.isdir:
-            img_file = os.path.join(ctx.path, '0.jpg')
-            if os.path.isfile(img_file):
+            img_file = filesystem.join(ctx.path, '0.jpg')
+            if filesystem.is_file(img_file):
                 return img_file
             else:
                 return 'atlas://data/images/defaulttheme/filechooser_folder'
@@ -129,7 +133,7 @@ class FileChooserGalleryView(FileChooserIconView):
         else:
             return 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
     def get_time(self, ctx):
-        return time.ctime(os.path.getmtime(ctx.path))
+        return time.ctime(filesystem.getmtime(ctx.path))
 
 class PaintWidget(AsyncImage):
     do_drawing = True
@@ -225,7 +229,7 @@ class ImageCanvas(Widget):
     @source.setter
     def source(self, value):
         self.img.source = value
-        if os.path.exists(self.source):
+        if filesystem.is_file(self.source):
             self.blank.opacity = 0
             self.img.opacity = 1
         else:
@@ -243,9 +247,9 @@ class ViewerScreen(Screen):
         app.update_buttons()
     def set_image(self, img_fn):
         self.image.source = img_fn
-        if os.path.isdir(img_fn+'.overlays'):
+        if filesystem.is_dir(img_fn+'.overlays'):
             self.btns[1] = 'ic_action_view_image.png'
-            self.overlay.source = os.path.join(img_fn+'.overlays', sorted(os.listdir(img_fn+'.overlays'))[-1])
+            self.overlay.source = filesystem.join(img_fn+'.overlays', sorted(filesystem.listdir(img_fn+'.overlays'))[-1])
             app.paint_screen.painter.color = (1,1,1,1)
             app.paint_screen.painter.source = self.overlay.source
             try: self.both.add_widget(self.overlay)
@@ -316,7 +320,7 @@ class image_button(Button):
     @source.setter
     def source(self, value):
         self.img.source = value
-        if os.path.exists(value):
+        if filesystem.is_file(value):
             self.blank.opacity = 0
             self.img.opacity = 1
         else:
@@ -353,10 +357,10 @@ class PhotoStrip(ScrollView):
         self.scroll_y = 1
         if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
             self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
-        self.image0.source = os.path.join(path, '0.jpg')
-        self.image1.source = os.path.join(path, '1.jpg')
-        self.image2.source = os.path.join(path, '2.jpg')
-        self.image3.source = os.path.join(path, 'blank')
+        self.image0.source = filesystem.join(path, '0.jpg')
+        self.image1.source = filesystem.join(path, '1.jpg')
+        self.image2.source = filesystem.join(path, '2.jpg')
+        self.image3.source = filesystem.join(path, 'blank')
     def press_btn(self, btn):
         self.dispatch('on_press', btn.source)
     def release_btn(self, btn):
@@ -429,15 +433,15 @@ class Main(App):
         if good:
             self.goto_screen('photostrip', 'right')
     def save_painter(self):
-        savedir = os.path.normpath(self.paint_screen.image.source+'.overlays'+os.path.sep)
-        if not os.path.isdir(savedir):
-            os.mkdir(savedir)
+        savedir = self.paint_screen.image.source+'.overlays'
+        if not filesystem.is_dir(savedir):
+            filesystem.mkdir(savedir)
         index = 0
         filename = '%02d.png'
-        dircontents = os.listdir(savedir)
+        dircontents = filesystem.listdir(savedir)
         while filename % index in dircontents:
             index += 1
-        if self.paint_screen.painter.save_png(os.path.join(savedir, filename % index)):
+        if self.paint_screen.painter.save_png(filesystem.join(savedir, filename % index)):
             self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
             self.paint_screen.image.label.color = (0,0.75,0,1)
             self.paint_screen.image.label.text = 'Saved'
@@ -503,6 +507,7 @@ class Main(App):
         ## FileChooser
         chooser_screen = Screen(name='chooser')
         chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
+        chooser.file_system = filesystem
         def select_folder(chooser, photostrip):
             photostrip.set_path(chooser.current_entry.path)
             self.goto_screen('photostrip', 'left')
