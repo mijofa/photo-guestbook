@@ -1,5 +1,5 @@
 #!/usr/bin/python
-PHOTOS_PATH = '/mnt/tmp'
+PHOTOS_PATH = 'http://miranda/Photos'
 
 import os
 import time
@@ -23,10 +23,17 @@ from kivy.uix.label import Label
 from kivy.graphics import Rectangle, Color, Ellipse, Line, Fbo, ClearColor, ClearBuffers, Translate
 from kivy.clock import Clock
 from kivy.uix.widget import WidgetException
+import tempfile
+
+def a(arg):
+    return arg
+
+kivy.uix.filechooser.normpath = a
+kivy.uix.filechooser.realpath = a
 
 import filesystemhttp
 
-filesystem = filesystemhttp.FileSystemLocal()
+filesystem = filesystemhttp.FileSystemURL()
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -123,7 +130,7 @@ class FileChooserGalleryView(FileChooserIconView):
         if ctx.path == '../':
             return 'atlas://data/images/defaulttheme/filechooser_folder'
         elif ctx.isdir:
-            img_file = filesystem.join(ctx.path, '0.jpg')
+            img_file = filesystem.normpath(filesystem.join(ctx.path, '0.jpg'))
             if filesystem.is_file(img_file):
                 return img_file
             else:
@@ -247,17 +254,19 @@ class ViewerScreen(Screen):
         app.update_buttons()
     def set_image(self, img_fn):
         self.image.source = img_fn
-        if filesystem.is_dir(img_fn+'.overlays'):
+        try:
+            filesystem.listdir(img_fn+'.overlays')
+        except:
+            app.paint_screen.painter.color = (0,0,0,0)
+            self.btns[1] = None
+            self.both.remove_widget(self.overlay)
+        else:
             self.btns[1] = 'ic_action_view_image.png'
-            self.overlay.source = filesystem.join(img_fn+'.overlays', sorted(filesystem.listdir(img_fn+'.overlays'))[-1])
+            self.overlay.source = filesystem.join(img_fn+'.overlays', filesystem.listdir(img_fn+'.overlays')[-1])
             app.paint_screen.painter.color = (1,1,1,1)
             app.paint_screen.painter.source = self.overlay.source
             try: self.both.add_widget(self.overlay)
             except WidgetException: pass # The overlay widget may already be added, in which case I don't care.
-        else:
-            app.paint_screen.painter.color = (0,0,0,0)
-            self.btns[1] = None
-            self.both.remove_widget(self.overlay)
         self.both.scale = 1
         self.both.rotation = 0
         self.both.pos = [0,0]
@@ -269,7 +278,7 @@ class ViewerScreen(Screen):
         self.image = ImageCanvas(pos_hint={'center_x': 0.5, 'center_y': 0.5})
         self.overlay = AsyncImage(pos_hint={'center_x': 0.5, 'center_y': 0.5})
 
-        self.both = Scatter(size_hint=[1,1])
+        self.both = Scatter(size_hint=[1,1], do_rotation = False)
         self.both.add_widget(self.image)
         self.layout.add_widget(self.both)
         self.both.bind(size=self.fix_size)
@@ -354,6 +363,9 @@ class PhotoStrip(ScrollView):
 
         self.strip.bind(size=self.update_buttons,pos=self.update_buttons)
     def set_path(self, path):
+        print path
+        path = filesystem.normpath(path)
+        print path
         self.scroll_y = 1
         if 'effect_y' in dir(self): # Kivy 1.6.0 doesn't have effect_y
             self.effect_y.value = self.effect_y.min # This is to work around a bug with the ScrollView (https://github.com/kivy/kivy/issues/2038)
@@ -434,14 +446,24 @@ class Main(App):
             self.goto_screen('photostrip', 'right')
     def save_painter(self):
         savedir = self.paint_screen.image.source+'.overlays'
-        if not filesystem.is_dir(savedir):
-            filesystem.mkdir(savedir)
+        try:
+            filesystem.listdir(savedir)
+        except:
+            if not filesystem.is_dir(savedir):
+                filesystem.mkdir(savedir)
         index = 0
         filename = '%02d.png'
-        dircontents = filesystem.listdir(savedir)
-        while filename % index in dircontents:
-            index += 1
-        if self.paint_screen.painter.save_png(filesystem.join(savedir, filename % index)):
+        try:
+            dircontents = os.listdir(savedir)
+        except: # Probably using the HTTP filesystem.
+            tmpused = True
+            filepath = tempfile.mktemp() + '.png'
+        else:
+            tmpused = False
+            while filename % index in dircontents:
+                index += 1
+            filepath = filesystem.join(savedir, filename % index)
+        if self.paint_screen.painter.save_png(filepath) and (not tmpused or filesystem.savefile(savedir, 'png', filepath)): # If saving the file works and either the tmpfile was not used ot the second stage of saving works.
             self.paint_screen.painter.do_drawing = False # Stop drawing on the image until the canvas gets cleared (by switching screen)
             self.paint_screen.image.label.color = (0,0.75,0,1)
             self.paint_screen.image.label.text = 'Saved'
@@ -538,7 +560,7 @@ class Main(App):
         photostrip_screen.btns          = [None,                                       None,                         'ic_sysbar_back.png']
         photostrip_screen.btn_functions = [None,                                       None,                         lambda:self.goto_screen('chooser', 'right')]
 
-        viewer_screen.btns              = ['ic_action_new_edit.png',                   None,                         'ic_sysbar_back.png']
+        viewer_screen.btns              = ['ic_action_edit.png',                       None,                         'ic_sysbar_back.png']
         viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), viewer_screen.drawing_toggle, lambda:self.goto_screen('photostrip', 'right')]
 
         self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
