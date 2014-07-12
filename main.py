@@ -182,7 +182,7 @@ class PaintWidget(AsyncImage):
             self.draw_const = [center[0]-const_halved[0], center[0]+const_halved[0], center[1]-const_halved[1], center[1]+const_halved[1]]
             if touch.x > self.draw_const[0] and touch.x < self.draw_const[1] and touch.y > self.draw_const[2] and touch.y < self.draw_const[3]:
                 self.done_draw = True
-                with self.canvas:
+                with self.canvas.after:
                     Color(1,1,1)
                     diameter = 4
                     Ellipse(pos=(touch.x-(diameter/2), touch.y-(diameter/2)), size=(diameter, diameter))
@@ -204,7 +204,7 @@ class PaintWidget(AsyncImage):
         if touch.ud.has_key('line_inner'):
             touch.ud['line_inner'].points = touch.ud['line_outer'].points
     def clear(self):
-        self.canvas.clear()
+        self.canvas.after.clear()
         self.do_drawing = True
         self.done_draw = False
 
