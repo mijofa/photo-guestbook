@@ -155,7 +155,7 @@ class PaintWidget(AsyncImage):
         with fbo:
             ClearColor(0, 0, 0, 0) # I changed this from 0,0,0,1 to 0,0,0,0 so that I could have a transparent background.
             ClearBuffers()
-            Translate(self.draw_const[0], -self.draw_const[2], 0)
+            Translate(-self.draw_const[0], -self.draw_const[2], 0)
 
         fbo.add(self.canvas)
         fbo.draw()
