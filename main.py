@@ -251,6 +251,7 @@ class ViewerScreen(Screen):
         app.update_buttons()
     def set_image(self, img_fn):
         self.image.source = img_fn
+        app.paint_screen.image.source = img_fn
         try:
             filesystem.listdir(img_fn+'.overlays')
         except:
@@ -287,7 +288,10 @@ class PaintScreen(Screen):
     def update_bg(self, instance, value):
         instance.bg_col.size = instance.size
         instance.bg_col.pos = instance.pos
-        self.painter.size_const = self.image.img.get_norm_image_size()
+        if self.image.img.opacity == 1:
+            self.painter.size_const = self.image.img.get_norm_image_size()
+        elif self.image.blank.opacity == 1:
+            self.painter.size_const = self.painter.size
     def __init__(self, *args, **kwargs):
         super(PaintScreen, self).__init__(*args, **kwargs)
 
@@ -542,12 +546,14 @@ class Main(App):
         viewer_screen.bind(on_enter=lambda src:setattr(self.paint_screen.image,'source',viewer_screen.image.source))
 
         ## Photo strip
+        def foo(a):
+            print type(a), a
         photostrip_screen = Screen(name='photostrip')
         photostrip = PhotoStrip()
         photostrip_screen.add_widget(photostrip)
         photostrip.bind(
                 on_press=lambda src,fn:viewer_screen.set_image(fn),
-                on_release=lambda src,fn: self.goto_screen('viewer', 'left'),
+                on_release=lambda src,fn: self.goto_screen('painter', 'left'),
         )
 
         # Set up the icons and functions for the navbar buttons
@@ -561,7 +567,7 @@ class Main(App):
         viewer_screen.btn_functions     = [lambda:self.goto_screen('painter', 'left'), viewer_screen.drawing_toggle, lambda:self.goto_screen('photostrip', 'right')]
 
         self.paint_screen.btns          = ['ic_action_save.png',                       None,                         'ic_action_discard.png']
-        self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('viewer', 'right')]
+        self.paint_screen.btn_functions = [self.save_painter,                          None,                         lambda:self.goto_screen('photostrip', 'right')]
 
         # Finally, add the screens to the manager
         self.screen_manager.add_widget(chooser_screen)
