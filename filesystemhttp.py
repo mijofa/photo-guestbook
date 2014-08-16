@@ -100,8 +100,8 @@ class FileSystemURL(FileSystemAbstract):
     # Query Functions
     def listdir(self, url):
         print 'listing', url
-        if self.last_url != url or self.last_get < time()-10:
-            self._get_url(url)
+#        if self.last_url != url or self.last_get < time()-10:
+        self._get_url(url)
         dirlist = []
         for f in self._files:
             dirlist.append(f['filename'])
