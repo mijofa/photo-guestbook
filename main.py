@@ -1,5 +1,5 @@
 #!/usr/bin/python
-PHOTOS_PATH = 'http://miranda/Photos'
+PHOTOS_PATH = 'http://172.16.90.1/Photos'
 
 import os
 import time

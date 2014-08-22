@@ -115,10 +115,10 @@ class FileSystemURL(FileSystemAbstract):
         return False
     def is_file(self, url):
         # This is a bad way to implement this, I'm just checking whether it has a '.' in the filename. So it completely fails to check whether the filea actually exists in the first place
-        return '.' in url
+        return '.' in url.split('/')[-1]
     def is_dir(self, url):
         # This is a bad way to implement this, I'm just checking whether it has a '.' in the filename. So it completely fails to check whether the filea actually exists in the first place
-        return '.' not in url
+        return '.' not in url.split('/')[-1]
     def getmtime(self, url):
         for i in self._files:
             if os.path.basename(url) == i['filename']:
