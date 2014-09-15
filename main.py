@@ -54,7 +54,7 @@ Builder.load_string("""
 
     AsyncImage:
         size: ctx.controller().thumbsize,ctx.controller().thumbsize
-        source: ctx.controller().get_image(ctx)
+        source: ctx.controller().get_thumb(ctx)
         pos: root.x + dp(24), root.y + dp(40)
     Label:
         text: ctx.name
@@ -123,11 +123,11 @@ class FileChooserGalleryView(FileChooserIconView):
     def on_select_folder(self):
         pass
 
-    def get_image(self, ctx):
+    def get_thumb(self, ctx):
         if ctx.path == '../':
             return 'atlas://data/images/defaulttheme/filechooser_folder'
         elif ctx.isdir:
-            img_file = filesystem.normpath(filesystem.join(ctx.path, '0.jpg'))
+            img_file = filesystem.normpath(filesystem.join(ctx.path, 'folder.jpg'))
             if filesystem.is_file(img_file):
                 return img_file
             else:
