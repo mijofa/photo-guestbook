@@ -13,7 +13,7 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.image import AsyncImage, Image
+from kivy.uix.image import AsyncImage
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -33,7 +33,7 @@ import filesystemhttp
 filesystem = filesystemhttp.FileSystemURL()
 
 from kivy.loader import Loader
-Loader.loading_image = Image('loading.png')
+Loader.loading_image = 'loading.png'
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
