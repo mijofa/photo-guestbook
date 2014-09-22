@@ -33,7 +33,6 @@ import filesystemhttp
 filesystem = filesystemhttp.FileSystemURL()
 
 from kivy.loader import Loader
-Loader.loading_image = 'loading.png'
 
 Builder.load_string("""
 [FileGalleryEntry@Widget]:
@@ -531,6 +530,7 @@ class Main(App):
         with self.screen_manager.canvas.before:
             self.screen_manager.bg = Rectangle(source='background.png')
 
+        Loader.loading_image = 'loading.png'
         ## FileChooser
         chooser_screen = Screen(name='chooser')
         chooser = FileChooserGalleryView(rootpath=PHOTOS_PATH)
