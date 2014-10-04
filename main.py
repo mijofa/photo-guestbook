@@ -482,7 +482,7 @@ class Main(App):
         self.screen_manager.current = screen_name
     # This function is just to keep the screen_manager size with window resizing
     def update_size(self, root, value):
-        self.screen_manager.size = (root.width-96, root.height)
+        self.screen_manager.size = (root.width-192, root.height)
 
     def build(self):
         root = FloatLayout()
@@ -503,17 +503,17 @@ class Main(App):
                 Color(1,1,1,1) # Reset the color, otherwise the background goes dark
         def derend_circle(btn):
             btn.canvas.remove(btn.hl)
-        self.win_btn = Button(text='', size_hint=[None,None],size=[96,96],height=96,pos_hint={'right': 1, 'center_y': 0.8})
+        self.win_btn = Button(text='', size_hint=[None,None],size=[192,192],height=192,pos_hint={'right': 1, 'center_y': 0.8})
         self.win_btn.bind(on_press=rend_circle)
         self.win_btn.bind(on_release=derend_circle)
         self.win_btn.bind(on_release=self.pressed_win)
 
-        self.home_btn = Button(text='', size_hint=[None,None],size=[96,96],pos_hint={'right': 1, 'center_y': 0.5})
+        self.home_btn = Button(text='', size_hint=[None,None],size=[192,192],pos_hint={'right': 1, 'center_y': 0.5})
         self.home_btn.bind(on_press=rend_circle)
         self.home_btn.bind(on_release=derend_circle)
         self.home_btn.bind(on_release=self.pressed_home)
 
-        self.back_btn = Button(text='', size_hint=[None,None],size=[96,96],pos_hint={'right': 1, 'center_y': 0.2})
+        self.back_btn = Button(text='', size_hint=[None,None],size=[192,192],pos_hint={'right': 1, 'center_y': 0.2})
         self.back_btn.bind(on_press=rend_circle)
         self.back_btn.bind(on_release=derend_circle)
         self.back_btn.bind(on_release=self.pressed_back)
